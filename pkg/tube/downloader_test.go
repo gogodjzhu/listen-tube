@@ -1,21 +1,42 @@
 package tube
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestDownloader_Download(t *testing.T) {
+	type fields struct {
+		videoId string
+	}
 	type args struct {
-		video Video
+		force bool
 	}
 	tests := []struct {
-		name string
-		args args
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "ok",
+			fields: fields{
+				videoId: "PagHbCgW7Uo",
+			},
+			args: args{
+				force: true,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Downloader{}
-			d.Download(tt.args.video)
+			d, err := NewDownloader(tt.fields.videoId)
+			if err != nil {
+				t.Errorf("NewDownloader() error = %v", err)
+			}
+			if err := d.Download(tt.args.force); (err != nil) != tt.wantErr {
+				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
