@@ -2,18 +2,16 @@ package dao
 
 import (
 	"example.com/m/v2/pkg/db"
-	"fmt"
-	"github.com/google/uuid"
 	"time"
 )
 
 type Channel struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;"`
-	Platform  string    `gorm:"platform"`
-	ChannelID string    `gorm:"channel_id"`
-	Name      string    `gorm:"name"`
-	CreateAt  time.Time `gorm:"create_at"`
-	UpdateAt  time.Time `gorm:"update_at"`
+	ID            uint      `gorm:"id;primaryKey;autoIncrement"`
+	Platform      string    `gorm:"platform"`
+	Name          string    `gorm:"name"`
+	ChannelCredit string    `gorm:"channel_credit"`
+	CreateAt      time.Time `gorm:"create_at"`
+	UpdateAt      time.Time `gorm:"update_at"`
 }
 
 func (Channel) TableName() string {
@@ -21,30 +19,15 @@ func (Channel) TableName() string {
 }
 
 type ChannelMapper struct {
-	*db.DatabaseSource
+	*db.BasicMapper[Channel]
 }
 
-func NewChannelMapper(db *db.DatabaseSource) (*ChannelMapper, error) {
-	err := db.DB.AutoMigrate(&Channel{})
+func NewChannelMapper(ds *db.DatabaseSource) (*ChannelMapper, error) {
+	bm, err := db.NewBasicMapper[Channel](ds)
 	if err != nil {
 		return nil, err
 	}
 	return &ChannelMapper{
-		db,
+		bm,
 	}, nil
-}
-
-func (d *ChannelMapper) Insert(channel *Channel) (int64, error) {
-	result := d.DB.Create(channel)
-	return result.RowsAffected, result.Error
-}
-
-func (d *ChannelMapper) ListAll() ([]Channel, error) {
-	var channels []Channel
-	sql := fmt.Sprintf("SELECT * FROM %s", Channel{}.TableName())
-	result := d.DB.Raw(sql).Scan(&channels)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return channels, nil
 }
