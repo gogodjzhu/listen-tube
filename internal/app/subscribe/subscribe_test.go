@@ -1,6 +1,7 @@
 package subscribe
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,6 +18,16 @@ import (
 var fixedTime = time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC)
 
 func setupSuite(t *testing.T) func(t *testing.T) {
+	// Teardown: delete test db files
+	files, err := filepath.Glob("/tmp/listen-tube-unit-test-*.db")
+	if err != nil {
+		t.Fatalf("Failed to list test db files: %v", err)
+	}
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			t.Fatalf("Failed to delete test db file %s: %v", file, err)
+		}
+	}
 	// Return a function to teardown the test suite
 	return func(t *testing.T) {
 		// Teardown: delete test db files
@@ -129,7 +140,8 @@ func MockSubscribeService() *SubscribeService {
 
 	fetcherInstance := fetcher.NewFetcher(fetcher.Config{})
 
-	subscribeService, err := NewSubscribeService(unionMapper, downloaderInstance, fetcherInstance)
+	ctx := context.Background()
+	subscribeService, err := NewSubscribeService(ctx, unionMapper, downloaderInstance, fetcherInstance)
 	if err != nil {
 		panic(err)
 	}
@@ -142,8 +154,8 @@ func TestSubscribeService_AddSubscription(t *testing.T) {
 	defer teardownSuite(t)
 
 	tests := []struct {
-		name    string
-		args    struct {
+		name string
+		args struct {
 			userCredit    string
 			channelCredit string
 		}
@@ -191,8 +203,8 @@ func TestSubscribeService_DeleteSubscription(t *testing.T) {
 	defer teardownSuite(t)
 
 	tests := []struct {
-		name    string
-		args    struct {
+		name string
+		args struct {
 			userCredit    string
 			channelCredit string
 		}
@@ -240,8 +252,8 @@ func TestSubscribeService_ListSubscription(t *testing.T) {
 	defer teardownSuite(t)
 
 	tests := []struct {
-		name    string
-		args    struct {
+		name string
+		args struct {
 			userCredit string
 		}
 		want    []*dao.Subscription
@@ -340,6 +352,70 @@ func TestSubscribeService_DownloadContent(t *testing.T) {
 			defer teardownTest(t)
 
 			s.DownloadContent()
+		})
+	}
+}
+
+func TestSubscribeService_ListContent(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	tests := []struct {
+		name string
+		args struct {
+			userCredit string
+		}
+		want    []*dao.Content
+		wantErr bool
+	}{
+		{
+			name: "Valid list content",
+			args: struct {
+				userCredit string
+			}{
+				userCredit: "validUser1",
+			},
+			want: []*dao.Content{
+				{
+					ID:            1,
+					Platform:      "YouTube",
+					ChannelCredit: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+					Title:         "Test Content",
+					Thumbnail:     "http://example.com/thumbnail.jpg",
+					ContentCredit: "dQw4w9WgXcQ",
+					State:         dao.ContentStateInited,
+					CreateAt:      fixedTime,
+					UpdateAt:      fixedTime,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid list content",
+			args: struct {
+				userCredit string
+			}{
+				userCredit: "invalidUser",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := MockSubscribeService()
+			teardownTest := setupTest(t, s)
+			defer teardownTest(t)
+
+			got, err := s.ListContent(tt.args.userCredit)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SubscribeService.ListContent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SubscribeService.ListContent() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

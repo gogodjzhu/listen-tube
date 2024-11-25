@@ -28,15 +28,63 @@ type SubscribeService struct {
 	fetcher            *fetcher.Fetcher
 }
 
-func NewSubscribeService(mapper *dao.UnionMapper, downloader *downloader.Downloader, fetcher *fetcher.Fetcher) (*SubscribeService, error) {
-	return &SubscribeService{
+func NewSubscribeService(ctx context.Context, mapper *dao.UnionMapper, downloader *downloader.Downloader, fetcher *fetcher.Fetcher) (*SubscribeService, error) {
+	ss := &SubscribeService{
 		subscriptionMapper: mapper.SubscriptionMapper,
 		userMapper:         mapper.UserMapper,
 		channelMapper:      mapper.ChannelMapper,
 		contentMapper:      mapper.ContentMapper,
 		downloader:         downloader,
 		fetcher:            fetcher,
-	}, nil
+	}
+
+	// Schedule to execute `FetchContent` and `DownloadContent` periodically in the background
+	go ss.scheduleFetchContent(ctx)
+	go ss.scheduleDownloadContent(ctx)
+
+	return ss, nil
+}
+
+func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Stopping scheduled FetchContent task")
+			return
+		case <-ticker.C:
+			log.Info("Starting scheduled FetchContent task")
+			fetchCount, err := s.FetchContent()
+			if err != nil {
+				log.Errorf("Error during scheduled FetchContent task: %v", err)
+			} else {
+				log.Infof("Scheduled FetchContent task completed, fetched %d contents", fetchCount)
+			}
+		}
+	}
+}
+
+func (s *SubscribeService) scheduleDownloadContent(ctx context.Context) {
+	ticker := time.NewTicker(12 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Stopping scheduled DownloadContent task")
+			return
+		case <-ticker.C:
+			log.Info("Starting scheduled DownloadContent task")
+			err := s.DownloadContent()
+			if err != nil {
+				log.Errorf("Error during scheduled DownloadContent task: %v", err)
+			} else {
+				log.Info("Scheduled DownloadContent task completed")
+			}
+		}
+	}
 }
 
 // AddSubscription adds a new subscription for a user to a channel.
@@ -136,6 +184,31 @@ func (s *SubscribeService) ListSubscription(userCredit string) ([]*dao.Subscript
 	return s.subscriptionMapper.Select(&dao.Subscription{UserCredit: userCredit})
 }
 
+func (s *SubscribeService) ListContent(userCredit string) ([]*dao.Content, error) {
+	// check if the user exists
+	user, err := s.userMapper.Select(&dao.User{Credit: userCredit})
+	if err != nil || len(user) == 0 {
+		return nil, fmt.Errorf("user does not exist")
+	}
+
+	// list the subscribed channels of the user
+	subscriptions, err := s.subscriptionMapper.Select(&dao.Subscription{UserCredit: userCredit})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list subscriptions")
+	}
+
+	// list the contents of the subscribed channels
+	contents := make([]*dao.Content, 0)
+	for _, subscription := range subscriptions {
+		c, err := s.contentMapper.Select(&dao.Content{ChannelCredit: subscription.ChannelCredit})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list contents")
+		}
+		contents = append(contents, c...)
+	}
+	return contents, nil
+}
+
 // FetchContent fetches content for all subscriptions.
 func (s *SubscribeService) FetchContent() (int, error) {
 	// list all subscriptions of all users and related channels
@@ -218,39 +291,4 @@ func (s *SubscribeService) DownloadContent() error {
 		}
 	}
 	return nil
-}
-
-type AddSubscriptionOption struct {
-	UserID    string
-	ChannelID string
-}
-
-type AddSubscriptionResult struct {
-	Err error
-}
-
-type DeleteSubscriptionOption struct {
-	UserID    string
-	ChannelID string
-}
-
-type DeleteSubscriptionResult struct {
-	Err error
-}
-
-type ListSubscriptionOption struct {
-	UserID string
-}
-
-type ListSubscriptionResult struct {
-	Subscriptions []*Subscription
-	Err           error
-}
-
-type Subscription struct {
-	Platform      string    `json:"platform"`
-	ChannelCredit string    `json:"channel_credit"`
-	ChannelName   string    `json:"channel_name"`
-	CreateAt      time.Time `json:"create_at"`
-	UpdateAt      time.Time `json:"update_at"`
 }
