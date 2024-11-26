@@ -1,0 +1,23 @@
+### Add Subscription
+POST http://localhost:8080/subscription/add
+Content-Type: application/json
+
+{
+  "userCredit": "validUser1",
+  "channelCredit": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+}
+
+### Delete Subscription
+POST http://localhost:8080/subscription/delete
+Content-Type: application/json
+
+{
+  "userCredit": "validUser1",
+  "channelCredit": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+}
+
+### List Subscriptions
+GET http://localhost:8080/subscription/list?userCredit=validUser1
+
+### List Content
+GET http://localhost:8080/content/list?userCredit=validUser1
