@@ -79,28 +79,28 @@ func TestAuthService_Authenticate(t *testing.T) {
 		name     string
 		username string
 		password string
-		want     bool
+		wantUser bool
 		wantErr  bool
 	}{
 		{
 			name:     "Valid credentials",
 			username: "TestUser",
 			password: "password",
-			want:     true,
+			wantUser: true,
 			wantErr:  false,
 		},
 		{
 			name:     "Invalid password",
 			username: "TestUser",
 			password: "wrongpassword",
-			want:     false,
+			wantUser: false,
 			wantErr:  true,
 		},
 		{
 			name:     "Non-existent user",
 			username: "NonExistentUser",
 			password: "password",
-			want:     false,
+			wantUser: false,
 			wantErr:  true,
 		},
 	}
@@ -111,13 +111,13 @@ func TestAuthService_Authenticate(t *testing.T) {
 			teardownTest := setupTest(t, s)
 			defer teardownTest(t)
 
-			got, err := s.Authenticate(tt.username, tt.password)
+			gotUser, err := s.Authenticate(tt.username, tt.password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AuthService.Authenticate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("AuthService.Authenticate() = %v, want %v", got, tt.want)
+			if (gotUser != nil) != tt.wantUser {
+				t.Errorf("AuthService.Authenticate() gotUser = %v, wantUser %v", gotUser != nil, tt.wantUser)
 			}
 		})
 	}

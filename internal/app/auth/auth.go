@@ -11,7 +11,7 @@ import (
 // Authenticator authenticates the user
 type Authenticator interface {
 	// Authenticate authenticates the user
-	Authenticate(username, password string) (bool, error)
+	Authenticate(username, password string) (*dao.User, error)
 	// Register registers a new user
 	Register(username, password string) error
 	// ChangePassword changes the password of the user
@@ -35,20 +35,20 @@ func NewAuthService(mapper *dao.UnionMapper) (*AuthService, error) {
 }
 
 // Authenticate authenticates the user
-func (s *AuthService) Authenticate(username, password string) (bool, error) {
+func (s *AuthService) Authenticate(username, password string) (*dao.User, error) {
 	users, err := s.userMapper.Select(&dao.User{Name: username})
 	if (err != nil) {
-		return false, err
+		return nil, err
 	}
-	if len(users) == 0 {
-		return false, errors.New("user not found")
+	if len(users) != 1 {
+		return nil, errors.New("invalid user or password")
 	}
 	user := users[0]
 	err = bcrypt.CompareHashAndPassword([]byte(user.Credit), []byte(password))
 	if err != nil {
-		return false, errors.New("invalid password")
+		return nil, errors.New("invalid user or password")
 	}
-	return true, nil
+	return user, nil
 }
 
 // Register registers a new user
