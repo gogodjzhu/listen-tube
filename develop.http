@@ -1,23 +1,54 @@
-### Add Subscription
-POST http://localhost:8080/subscription/add
+@jwt_cookie = TODO: replace with jwt cookie
+
+### /auth/register
+POST http://localhost:8080/auth/register
 Content-Type: application/json
 
 {
-  "userCredit": "validUser1",
-  "channelCredit": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+  "username": "validUser",
+  "password": "validPassword",
+  "invitedCode": "123456"
+}
+
+### /auth/login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "username": "validUser",
+  "password": "validPassword"
+}
+
+### /auth/current_user
+GET http://localhost:8080/auth/current_user
+Authorization: {{jwt_cookie}}
+
+### /auth/logout
+POST http://localhost:8080/auth/logout
+Authorization: {{jwt_cookie}}
+
+### /buzz/subscription/list
+GET http://localhost:8080/buzz/subscription/list?userCredit=validUser
+Authorization: {{jwt_cookie}}
+
+### /buzz/subscription/add
+POST http://localhost:8080/buzz/subscription/add
+Authorization: {{jwt_cookie}}
+Content-Type: application/json
+
+{
+  "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
 }
 
 ### Delete Subscription
 POST http://localhost:8080/subscription/delete
+Authorization: {{jwt_cookie}}
 Content-Type: application/json
 
 {
-  "userCredit": "validUser1",
-  "channelCredit": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+  "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
 }
-
-### List Subscriptions
-GET http://localhost:8080/subscription/list?userCredit=validUser1
 
 ### List Content
 GET http://localhost:8080/content/list?userCredit=validUser1
+Authorization: {{jwt_cookie}}

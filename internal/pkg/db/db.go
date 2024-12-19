@@ -5,6 +5,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	logger "gorm.io/gorm/logger"
 )
 
 type DatabaseSource struct {
@@ -16,7 +17,9 @@ type Config struct {
 }
 
 func NewDatabaseSource(conf *Config) (*DatabaseSource, error) {
-	db, err := gorm.Open(sqlite.Open(conf.DSN), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(conf.DSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		return nil, err
 	}
