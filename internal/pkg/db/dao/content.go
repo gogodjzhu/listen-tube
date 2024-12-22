@@ -28,7 +28,7 @@ const (
 )
 
 func (Content) TableName() string {
-	return "content"
+	return "t_content"
 }
 
 type ContentMapper struct {
