@@ -1,10 +1,9 @@
 module github.com/gogodjzhu/listen-tube
 
-go 1.23.2
+go 1.23
 
 require (
 	github.com/appleboy/gin-jwt/v2 v2.10.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.10.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tidwall/gjson v1.18.0
