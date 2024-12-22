@@ -11,6 +11,7 @@ import (
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
+	"github.com/gogodjzhu/listen-tube/internal/pkg/util/str"
 )
 
 // Subscribe is an interface that defines the methods that must be implemented by a subscription service.
@@ -46,6 +47,15 @@ func NewSubscribeService(ctx context.Context, mapper *dao.UnionMapper, downloade
 }
 
 func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
+	// Execute FetchContent immediately
+	log.Info("Starting initial FetchContent task")
+	fetchCount, err := s.FetchContent()
+	if err != nil {
+		log.Errorf("Error during initial FetchContent task: %v", err)
+	} else {
+		log.Infof("Initial FetchContent task completed, fetched %d contents", fetchCount)
+	}
+
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
@@ -67,6 +77,15 @@ func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
 }
 
 func (s *SubscribeService) scheduleDownloadContent(ctx context.Context) {
+	// Execute DownloadContent immediately
+	log.Info("Starting initial DownloadContent task")
+	err := s.DownloadContent()
+	if err != nil {
+		log.Errorf("Error during initial DownloadContent task: %v", err)
+	} else {
+		log.Info("Initial DownloadContent task completed")
+	}
+
 	ticker := time.NewTicker(12 * time.Hour)
 	defer ticker.Stop()
 
@@ -109,8 +128,11 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 			return fmt.Errorf("channel does not exist")
 		}
 		newChannel := &dao.Channel{
-			Platform:      result.Platform,
-			Name:          result.Contents[0].Title,
+			Platform:      dao.Platform(result.Platform),
+			Name:          result.Title,
+			Description:   result.Description,
+			OwnerUrls:     str.ArrayToStringWithSplit(result.OwnerUrls, ","),
+			Thumbnails:    str.ArrayToStringWithSplit(result.Thumbnails, ","),
 			ChannelCredit: result.ChannelCredit,
 			CreateAt:      time.Now(),
 			UpdateAt:      time.Now(),
@@ -121,7 +143,7 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 		}
 		for _, content := range result.Contents {
 			_, err := s.contentMapper.Insert(&dao.Content{
-				Platform:      result.Platform,
+				Platform:      string(result.Platform),
 				ChannelCredit: result.ChannelCredit,
 				Title:         content.Title,
 				Thumbnail:     content.Thumbnail,

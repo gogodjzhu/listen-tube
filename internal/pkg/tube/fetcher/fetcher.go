@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/http"
 	"github.com/tidwall/gjson"
 )
@@ -43,15 +44,31 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 		title := gjson.Get(videoRenderer.Raw, "title.runs.0.text")
 		thumbnail := gjson.Get(videoRenderer.Raw, "thumbnail.thumbnails.@reverse.0.url")
 		contents = append(contents, Content{
-			Credit:    videoId.Raw,
-			Title:     title.Raw,
-			Thumbnail: thumbnail.Raw,
+			Credit:    videoId.Str,
+			Title:     title.Str,
+			Thumbnail: thumbnail.Str,
 		})
+	}
+	metadata := gjson.Get(initialDataStr, "metadata.channelMetadataRenderer")
+	title := gjson.Get(metadata.Raw, "title")
+	description := gjson.Get(metadata.Raw, "description")
+	var ownerUrls []string
+	for _, ownerUrl := range gjson.Get(metadata.Raw, "ownerUrls").Array() {
+		ownerUrls = append(ownerUrls, ownerUrl.Str)
+	}
+	var thumbnails []string
+	for _, thumbnail := range gjson.Get(metadata.Raw, "avatar.thumbnails").Array() {
+		t := gjson.Get(thumbnail.Raw, "url")
+		thumbnails = append(thumbnails, t.Str)
 	}
 
 	return &Result{
 		Platform:      "youtube",
 		ChannelCredit: opt.ChannelCredit,
+		Title:         title.Str,
+		Description:   description.Str,
+		Thumbnails:    thumbnails,
+		OwnerUrls:     ownerUrls,
 		Contents:      contents,
 		Err:           nil,
 	}, nil
@@ -78,8 +95,12 @@ type FetchOption struct {
 }
 
 type Result struct {
-	Platform      string
+	Platform      dao.Platform
 	ChannelCredit string
+	Title         string
+	Description   string
+	Thumbnails    []string
+	OwnerUrls     []string
 	Contents      []Content
 	Err           error
 }

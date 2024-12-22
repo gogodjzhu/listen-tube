@@ -129,9 +129,10 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 
 	// prepare the download command
 	args := make([]string, 0)
-	if opt.Format != "" {
-		args = append(args, "--merge-output-format", "mp4")
-	}
+	// if opt.Format != "" {
+	// 	args = append(args, "--merge-output-format", opt.Format)
+	// }
+	args = append(args, "-f", "worstaudio")
 	args = append(args, "-o", result.Output)
 	args = append(args, result.ContentURL)
 	cmd := exec.Command(d.binUri, args...)
