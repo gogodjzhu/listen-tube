@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
+	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
 type BuzzController struct {
@@ -25,7 +26,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		result := c.AddSubscription(&req)
+		userinfo := jwt.GetCurrentUser(ctx)
+		result := c.AddSubscription(userinfo, &req)
 		ctx.JSON(http.StatusOK, result)
 	})
 
@@ -35,7 +37,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		result := c.DeleteSubscription(&req)
+		userinfo := jwt.GetCurrentUser(ctx)
+		result := c.DeleteSubscription(userinfo, &req)
 		ctx.JSON(http.StatusOK, result)
 	})
 
@@ -45,7 +48,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		result := c.ListSubscription(&req)
+		userinfo := jwt.GetCurrentUser(ctx)
+		result := c.ListSubscription(userinfo, &req)
 		ctx.JSON(http.StatusOK, result)
 	})
 
@@ -55,7 +59,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		result := c.ListContent(&req)
+		userinfo := jwt.GetCurrentUser(ctx)
+		result := c.ListContent(userinfo, &req)
 		ctx.JSON(http.StatusOK, result)
 	})
 
@@ -63,8 +68,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 }
 
 // AddSubscription adds a new subscription for a user to a channel.
-func (c *BuzzController) AddSubscription(req *AddSubscriptionRequest) *AddSubscriptionResult {
-	if err := c.subscribeService.AddSubscription(req.UserID, req.ChannelID); err != nil {
+func (c *BuzzController) AddSubscription(userInfo *jwt.UserInfo, req *AddSubscriptionRequest) *AddSubscriptionResult {
+	if err := c.subscribeService.AddSubscription(userInfo.UserCredit, req.ChannelID); err != nil {
 		return &AddSubscriptionResult{Code: 1, Msg: err.Error()}
 	} else {
 		return &AddSubscriptionResult{Code: 0, Msg: "ok"}
@@ -72,8 +77,8 @@ func (c *BuzzController) AddSubscription(req *AddSubscriptionRequest) *AddSubscr
 }
 
 // DeleteSubscription deletes a subscription for a user to a channel.
-func (c *BuzzController) DeleteSubscription(req *DeleteSubscriptionRequest) *DeleteSubscriptionResult {
-	if err := c.subscribeService.DeleteSubscription(req.UserID, req.ChannelID); err != nil {
+func (c *BuzzController) DeleteSubscription(userInfo *jwt.UserInfo, req *DeleteSubscriptionRequest) *DeleteSubscriptionResult {
+	if err := c.subscribeService.DeleteSubscription(userInfo.UserCredit, req.ChannelID); err != nil {
 		return &DeleteSubscriptionResult{Code: 1, Msg: err.Error()}
 	} else {
 		return &DeleteSubscriptionResult{Code: 0, Msg: "ok"}
@@ -81,8 +86,8 @@ func (c *BuzzController) DeleteSubscription(req *DeleteSubscriptionRequest) *Del
 }
 
 // ListSubscription lists all subscriptions for a user.
-func (c *BuzzController) ListSubscription(req *ListSubscriptionRequest) *ListSubscriptionResult {
-	subscriptions, err := c.subscribeService.ListSubscription(req.UserID)
+func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubscriptionRequest) *ListSubscriptionResult {
+	subscriptions, err := c.subscribeService.ListSubscription(userInfo.UserCredit)
 	if err != nil {
 		return &ListSubscriptionResult{Code: 1, Msg: err.Error()}
 	}
@@ -100,8 +105,8 @@ func (c *BuzzController) ListSubscription(req *ListSubscriptionRequest) *ListSub
 }
 
 // ListContent lists all contents for a user.
-func (c *BuzzController) ListContent(req *ListContentRequest) *ListContentResult {
-	contents, err := c.subscribeService.ListContent(req.UserID)
+func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentRequest) *ListContentResult {
+	contents, err := c.subscribeService.ListContent(userInfo.UserCredit)
 	if err != nil {
 		return &ListContentResult{Code: 1, Msg: err.Error()}
 	}
@@ -122,7 +127,6 @@ func (c *BuzzController) ListContent(req *ListContentRequest) *ListContentResult
 }
 
 type AddSubscriptionRequest struct {
-	UserID    string `json:"user_id"`
 	ChannelID string `json:"channel_id"`
 }
 
@@ -132,7 +136,6 @@ type AddSubscriptionResult struct {
 }
 
 type DeleteSubscriptionRequest struct {
-	UserID    string `json:"user_id"`
 	ChannelID string `json:"channel_id"`
 }
 
@@ -142,7 +145,6 @@ type DeleteSubscriptionResult struct {
 }
 
 type ListSubscriptionRequest struct {
-	UserID string `json:"user_id"`
 }
 
 type ListSubscriptionResult struct {
@@ -152,7 +154,6 @@ type ListSubscriptionResult struct {
 }
 
 type ListContentRequest struct {
-	UserID string `json:"user_id"`
 }
 
 type ListContentResult struct {

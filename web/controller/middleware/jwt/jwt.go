@@ -1,4 +1,4 @@
-package middleware
+package jwt
 
 import (
 	"net/http"
@@ -46,7 +46,8 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 				return nil, jwt.ErrFailedAuthentication
 			}
 			return &UserInfo{
-				UserName: user.Name,
+				UserName:   user.Name,
+				UserCredit: user.Credit,
 			}, nil
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
@@ -96,27 +97,30 @@ func (m *JWTMiddleware) RegisterHandler(ctx *gin.Context) {
 }
 
 func (m *JWTMiddleware) UserInfoHandler(ctx *gin.Context) {
-	user := getCurrentUser(ctx)
+	user := GetCurrentUser(ctx)
 	ctx.JSON(http.StatusOK, user)
 }
 
 type UserInfo struct {
-	UserName string
+	UserName   string
+	UserCredit string
 }
 
-func getCurrentUser(c *gin.Context) *UserInfo {
+func GetCurrentUser(c *gin.Context) *UserInfo {
 	claims := jwt.ExtractClaims(c)
 	return claimsToUserinfo(claims)
 }
 
 func claimsToUserinfo(claims jwt.MapClaims) *UserInfo {
 	return &UserInfo{
-		UserName: claims["username"].(string),
+		UserName:   claims["username"].(string),
+		UserCredit: claims["usercredit"].(string),
 	}
 }
 
 func userinfoToClaims(user *UserInfo) jwt.MapClaims {
 	return jwt.MapClaims{
 		"username": user.UserName,
+		"usercredit":   user.UserCredit,
 	}
 }

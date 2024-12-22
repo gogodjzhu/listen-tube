@@ -13,7 +13,7 @@ import (
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
 	"github.com/gogodjzhu/listen-tube/web/controller/buzz"
-	"github.com/gogodjzhu/listen-tube/web/controller/middleware"
+	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
 type Controller struct {
@@ -73,7 +73,7 @@ func (c *Controller) Start() error {
 	if err != nil {
 		return err
 	}
-	jwtMiddleware, err := middleware.NewJWTMiddleware(c.authService)
+	jwtMiddleware, err := jwt.NewJWTMiddleware(c.authService)
 	if err != nil {
 		return err
 	}
