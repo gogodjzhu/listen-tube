@@ -23,6 +23,7 @@ type ContentState int
 
 const (
 	ContentStateInited ContentState = iota
+	ContentStatePrepared
 	ContentStateDownloading
 	ContentStateDownloaded
 )

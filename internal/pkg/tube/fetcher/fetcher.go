@@ -21,8 +21,35 @@ func NewFetcher(config Config) *Fetcher {
 	return &Fetcher{proxies: config.Proxies}
 }
 
+// ParseChannelCredit parse channel credit from channel credit string
+func (cf *Fetcher) ParseChannelCredit(channelCredit string) (string, error) {
+	channelCredit = strings.TrimSpace(channelCredit)
+	if !strings.HasPrefix(channelCredit, "https://") && !strings.HasPrefix(channelCredit, "http://") {
+		if strings.HasPrefix(channelCredit, "@") {
+			channelCredit = "https://www.youtube.com/" + channelCredit
+		} else {
+			channelCredit = "https://www.youtube.com/channel/" + channelCredit
+		}
+	}
+	html, err := http.HttpGet(cf.proxies, channelCredit)
+	if err != nil {
+		return "", err
+	}
+	initialDataStr, err := getTextFromHtml(html, "var ytInitialData = ", 0, "};")
+	if err != nil {
+		return "", err
+	}
+	initialDataStr += "}"
+	externalId := gjson.Get(initialDataStr, "metadata.channelMetadataRenderer.externalId")
+	return externalId.Str, nil
+}
+
 func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
-	baseUrl := fmt.Sprintf("https://www.youtube.com/channel/%s/videos?view=0&flow=grid", opt.ChannelCredit)
+	channelID, err := cf.ParseChannelCredit(opt.ChannelCredit)
+	if err != nil {
+		return nil, err
+	}
+	baseUrl := fmt.Sprintf("https://www.youtube.com/channel/%s/videos?view=0&flow=grid", channelID)
 	html, err := http.HttpGet(cf.proxies, baseUrl)
 	if err != nil {
 		return nil, err
@@ -43,6 +70,10 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 		videoId := gjson.Get(videoRenderer.Raw, "videoId")
 		title := gjson.Get(videoRenderer.Raw, "title.runs.0.text")
 		thumbnail := gjson.Get(videoRenderer.Raw, "thumbnail.thumbnails.@reverse.0.url")
+		if videoId.Str == "" || title.Str == "" || thumbnail.Str == "" {
+			fmt.Println(content.Str)
+			continue
+		}
 		contents = append(contents, Content{
 			Credit:    videoId.Str,
 			Title:     title.Str,
@@ -63,14 +94,14 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 	}
 
 	return &Result{
-		Platform:      "youtube",
-		ChannelCredit: opt.ChannelCredit,
-		Title:         title.Str,
-		Description:   description.Str,
-		Thumbnails:    thumbnails,
-		OwnerUrls:     ownerUrls,
-		Contents:      contents,
-		Err:           nil,
+		Platform:    "youtube",
+		ChannelID:   opt.ChannelCredit,
+		Title:       title.Str,
+		Description: description.Str,
+		Thumbnails:  thumbnails,
+		OwnerUrls:   ownerUrls,
+		Contents:    contents,
+		Err:         nil,
 	}, nil
 }
 
@@ -95,14 +126,14 @@ type FetchOption struct {
 }
 
 type Result struct {
-	Platform      dao.Platform
-	ChannelCredit string
-	Title         string
-	Description   string
-	Thumbnails    []string
-	OwnerUrls     []string
-	Contents      []Content
-	Err           error
+	Platform    dao.Platform
+	ChannelID   string
+	Title       string
+	Description string
+	Thumbnails  []string
+	OwnerUrls   []string
+	Contents    []Content
+	Err         error
 }
 
 type Content struct {

@@ -29,7 +29,7 @@ type SubscribeService struct {
 	fetcher            *fetcher.Fetcher
 }
 
-func NewSubscribeService(ctx context.Context, mapper *dao.UnionMapper, downloader *downloader.Downloader, fetcher *fetcher.Fetcher) (*SubscribeService, error) {
+func NewSubscribeService(mapper *dao.UnionMapper, downloader *downloader.Downloader, fetcher *fetcher.Fetcher) (*SubscribeService, error) {
 	ss := &SubscribeService{
 		subscriptionMapper: mapper.SubscriptionMapper,
 		userMapper:         mapper.UserMapper,
@@ -39,11 +39,16 @@ func NewSubscribeService(ctx context.Context, mapper *dao.UnionMapper, downloade
 		fetcher:            fetcher,
 	}
 
-	// Schedule to execute `FetchContent` and `DownloadContent` periodically in the background
-	go ss.scheduleFetchContent(ctx)
-	go ss.scheduleDownloadContent(ctx)
 
 	return ss, nil
+}
+
+// Start the background tasks to fetch and download content periodically
+func (s *SubscribeService) Start(ctx context.Context) error {
+	// Schedule to execute `FetchContent` and `DownloadContent` periodically in the background
+	go s.scheduleFetchContent(ctx)
+	go s.scheduleDownloadContent(ctx)
+	return nil
 }
 
 func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
@@ -133,7 +138,7 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 			Description:   result.Description,
 			OwnerUrls:     str.ArrayToStringWithSplit(result.OwnerUrls, ","),
 			Thumbnails:    str.ArrayToStringWithSplit(result.Thumbnails, ","),
-			ChannelCredit: result.ChannelCredit,
+			ChannelCredit: result.ChannelID,
 			CreateAt:      time.Now(),
 			UpdateAt:      time.Now(),
 		}
@@ -144,11 +149,11 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 		for _, content := range result.Contents {
 			_, err := s.contentMapper.Insert(&dao.Content{
 				Platform:      string(result.Platform),
-				ChannelCredit: result.ChannelCredit,
+				ChannelCredit: result.ChannelID,
 				Title:         content.Title,
 				Thumbnail:     content.Thumbnail,
 				ContentCredit: content.Credit,
-				State:         dao.ContentStateInited,
+				State:         dao.ContentStatePrepared,
 				CreateAt:      time.Now(),
 				UpdateAt:      time.Now(),
 			})
@@ -256,9 +261,17 @@ func (s *SubscribeService) FetchContent() (int, error) {
 				Title:         content.Title,
 				Thumbnail:     content.Thumbnail,
 				ContentCredit: content.Credit,
-				State:         dao.ContentStateInited,
+				State:         dao.ContentStatePrepared,
 				CreateAt:      time.Now(),
 				UpdateAt:      time.Now(),
+			}
+			oldContent, err := s.contentMapper.Select(&dao.Content{ContentCredit: content.Credit})
+			if err != nil {
+				return fetchCount, errors.Wrap(err, "failed to list content")
+			}
+			if len(oldContent) > 0 {
+				log.Debugf("content %s already exists", content.Credit)
+				continue
 			}
 			_, err = s.contentMapper.Insert(newContent)
 			if err != nil {
@@ -273,7 +286,7 @@ func (s *SubscribeService) FetchContent() (int, error) {
 // DownloadContent downloads content for all subscriptions.
 func (s *SubscribeService) DownloadContent() error {
 	// list all the content with the state of `ContentStateInited`
-	contents, err := s.contentMapper.Select(&dao.Content{State: dao.ContentStateInited})
+	contents, err := s.contentMapper.Select(&dao.Content{State: dao.ContentStatePrepared})
 	if err != nil {
 		return errors.Wrap(err, "failed to list content")
 	}

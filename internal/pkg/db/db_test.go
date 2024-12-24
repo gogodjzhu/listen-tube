@@ -14,9 +14,12 @@ import (
 type TestTable struct {
 	ID       uint      `gorm:"id;primaryKey;autoIncrement"`
 	Name     string    `gorm:"name"`
+	Enum     Enum      `gorm:"enum"`
 	CreateAt time.Time `gorm:"create_at"`
 	UpdateAt time.Time `gorm:"update_at"`
 }
+
+type Enum int
 
 func (TestTable) TableName() string {
 	return "t_test_table"
@@ -31,6 +34,7 @@ var fixedTime = time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC)
 var testTable = &TestTable{
 	ID:       1,
 	Name:     "Test",
+	Enum:     1,
 	CreateAt: fixedTime,
 	UpdateAt: fixedTime,
 }
@@ -150,13 +154,13 @@ func TestBasicMapper_Insert(t *testing.T) {
 	}{
 		{
 			name:    "Insert new record",
-			args:    struct{ t *TestTable }{t: &TestTable{Name: "New Record", CreateAt: fixedTime, UpdateAt: fixedTime}},
+			args:    struct{ t *TestTable }{t: &TestTable{Name: "New Record", Enum: 1, CreateAt: fixedTime, UpdateAt: fixedTime}},
 			want:    1,
 			wantErr: false,
 		},
 		{
 			name:    "Insert duplicate record",
-			args:    struct{ t *TestTable }{t: &TestTable{ID: 1, Name: "Duplicate Record", CreateAt: fixedTime, UpdateAt: fixedTime}},
+			args:    struct{ t *TestTable }{t: &TestTable{ID: 1, Name: "Duplicate Record", Enum: 1, CreateAt: fixedTime, UpdateAt: fixedTime}},
 			want:    0,
 			wantErr: true,
 		},
@@ -195,6 +199,12 @@ func TestBasicMapper_Select(t *testing.T) {
 		{
 			name:    "Select existing record",
 			args:    struct{ where TestTable }{where: TestTable{ID: 1}},
+			want:    []*TestTable{testTable},
+			wantErr: false,
+		},
+		{
+			name:    "Select existing record",
+			args:    struct{ where TestTable }{where: TestTable{Enum: Enum(1)}},
 			want:    []*TestTable{testTable},
 			wantErr: false,
 		},
@@ -242,7 +252,7 @@ func TestBasicMapper_Update(t *testing.T) {
 			args: struct {
 				old *TestTable
 				new *TestTable
-			}{old: &TestTable{ID: 1}, new: &TestTable{Name: "Updated", CreateAt: fixedTime, UpdateAt: fixedTime}},
+			}{old: &TestTable{ID: 1}, new: &TestTable{Name: "Updated", Enum: 2, CreateAt: fixedTime, UpdateAt: fixedTime}},
 			want:    1,
 			wantErr: false,
 		},
@@ -251,7 +261,7 @@ func TestBasicMapper_Update(t *testing.T) {
 			args: struct {
 				old *TestTable
 				new *TestTable
-			}{old: &TestTable{ID: 999}, new: &TestTable{Name: "Updated", CreateAt: fixedTime, UpdateAt: fixedTime}},
+			}{old: &TestTable{ID: 999}, new: &TestTable{Name: "Updated", Enum: 2, CreateAt: fixedTime, UpdateAt: fixedTime}},
 			want:    0,
 			wantErr: true,
 		},

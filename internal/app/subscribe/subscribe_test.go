@@ -1,7 +1,6 @@
 package subscribe
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -95,7 +94,7 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 		Title:         "Test Content",
 		Thumbnail:     "http://example.com/thumbnail.jpg",
 		ContentCredit: "dQw4w9WgXcQ",
-		State:         dao.ContentStateInited,
+		State:         dao.ContentStatePrepared,
 		CreateAt:      fixedTime,
 		UpdateAt:      fixedTime,
 	}
@@ -140,8 +139,7 @@ func MockSubscribeService() *SubscribeService {
 
 	fetcherInstance := fetcher.NewFetcher(fetcher.Config{})
 
-	ctx := context.Background()
-	subscribeService, err := NewSubscribeService(ctx, unionMapper, downloaderInstance, fetcherInstance)
+	subscribeService, err := NewSubscribeService(unionMapper, downloaderInstance, fetcherInstance)
 	if err != nil {
 		panic(err)
 	}
@@ -383,7 +381,7 @@ func TestSubscribeService_ListContent(t *testing.T) {
 					Title:         "Test Content",
 					Thumbnail:     "http://example.com/thumbnail.jpg",
 					ContentCredit: "dQw4w9WgXcQ",
-					State:         dao.ContentStateInited,
+					State:         dao.ContentStatePrepared,
 					CreateAt:      fixedTime,
 					UpdateAt:      fixedTime,
 				},

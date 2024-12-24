@@ -51,7 +51,11 @@ func NewController(ctx context.Context, conf *Config) (*Controller, error) {
 
 	fetcherInstance := fetcher.NewFetcher(fetcher.Config{})
 
-	subscribeService, err := subscribe.NewSubscribeService(ctx, unionMapper, downloaderInstance, fetcherInstance)
+	subscribeService, err := subscribe.NewSubscribeService(unionMapper, downloaderInstance, fetcherInstance)
+	if err != nil {
+		return nil, err
+	}
+	err = subscribeService.Start(ctx)
 	if err != nil {
 		return nil, err
 	}
