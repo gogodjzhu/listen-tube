@@ -3,24 +3,73 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
+    <title>Listen Tube</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+<header class="bg-light py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div class="search">
+            <input type="text" class="form-control" placeholder="Search...">
+            <i class="fa fa-search"></i>
+        </div>
+        <div id="user-controls">
+            <button id="login-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
+            <span id="user-info" class="d-none">
+                <span id="username"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                <button id="subscribe-btn" class="btn btn-success">Subscribe</button>
+            </span>
+        </div>
+    </div>
+</header>
 <div class="container">
-    <div class="row height d-flex justify-content-center align-items-center">
-        <div class="col-md-8">
-            <div class="search"> <i class="fa fa-search"></i> <input type="text" class="form-control" placeholder="Have a question? Ask Now"> <button class="btn btn-primary">Search</button> </div>
+    <div class="row" id="masonry">
+        <!-- Repeat similar blocks for more cards -->
+    </div>
+</div>
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loginModalLabel">Login</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="login-username" class="form-control mb-2" placeholder="Username">
+                <input type="password" id="login-password" class="form-control" placeholder="Password">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="submit-login" class="btn btn-primary">Login</button>
+            </div>
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/mhDoLbDldZc3qpsJHpLogda//BVZbgYuw6kof4u2FrCedxOtgRZDTHgHUhOCVim" crossorigin="anonymous"></script>
+<!-- Subscription Modal -->
+<div class="modal fade" id="subscribeModal" tabindex="-1" aria-labelledby="subscribeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subscribeModalLabel">Subscribe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="subscription-url" class="form-control" placeholder="Enter URL">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="submit-subscription" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<button id="back-to-top" class="btn btn-primary"><i class="fa fa-arrow-up"></i></button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
 </body>
 </html>
-
-
-<!--<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">-->
-<!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">-->
-<!--<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>-->
-<!--<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>-->
-<!--<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>-->
