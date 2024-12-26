@@ -61,7 +61,7 @@ func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
 		log.Infof("Initial FetchContent task completed, fetched %d contents", fetchCount)
 	}
 
-	ticker := time.NewTicker(24 * time.Hour)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -91,7 +91,7 @@ func (s *SubscribeService) scheduleDownloadContent(ctx context.Context) {
 		log.Info("Initial DownloadContent task completed")
 	}
 
-	ticker := time.NewTicker(12 * time.Hour)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -324,6 +324,9 @@ func (s *SubscribeService) DownloadContent() error {
 		} else {
 			log.Errorf("failed to download content %s: %v", content.ContentCredit, result.Err)
 		}
+
+		log.Info("sleep 5 min before next download")
+		time.Sleep(5 * time.Minute)
 	}
 	return nil
 }
