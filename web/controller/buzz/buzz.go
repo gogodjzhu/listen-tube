@@ -2,10 +2,13 @@ package buzz
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
+	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
@@ -62,6 +65,40 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 		userinfo := jwt.GetCurrentUser(ctx)
 		result := c.ListContent(userinfo, &req)
 		ctx.JSON(http.StatusOK, result)
+	})
+
+	// 新增的端点，用于流式传输音频文件
+	r.GET("/content/stream/:contentCredit", func(ctx *gin.Context) {
+		contentCredit := ctx.Param("contentCredit")
+		userinfo := jwt.GetCurrentUser(ctx)
+		contents, err := c.subscribeService.ListContent(userinfo.UserCredit)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		var content *dao.Content
+		for _, c := range contents {
+			if c.ContentCredit == contentCredit {
+				content = c
+				break
+			}
+		}
+
+		if content == nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Content not found"})
+			return
+		}
+
+		file, err := os.Open(content.Path)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+			return
+		}
+		defer file.Close()
+
+		ctx.Header("Content-Type", "audio/mp3")
+		http.ServeContent(ctx.Writer, ctx.Request, filepath.Base(content.Path), content.UpdateAt, file)
 	})
 
 	return nil

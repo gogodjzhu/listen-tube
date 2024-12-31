@@ -12,10 +12,10 @@ $(document).ready(function () {
                     data.push({
                         title: `Card ${((page - 1) * itemsPerPage) + i + 1}`,
                         text: `Content for card ${((page - 1) * itemsPerPage) + i + 1}`,
-                        img: "https://via.placeholder.com/300"
+                        img: "https://fakeimg.pl/300x300",
+                        uri: "http://127.0.0.1:8080/static/01.mp3"
                     });
                 }
-                console.log("Fetched data:", data);
                 resolve(data);
             }, 1000);
         });
@@ -26,7 +26,7 @@ $(document).ready(function () {
         data.forEach(item => {
             const cardHtml = `
                 <div class="col-md-12 mb-4">
-                    <div class="card d-flex flex-row">
+                    <div class="card d-flex flex-row" data-audio='${JSON.stringify(item)}'>
                         <img src="${item.img}" class="card-img-left" alt="...">
                         <div class="card-body">
                             <h5 class="card-title">${item.title}</h5>
@@ -36,6 +36,12 @@ $(document).ready(function () {
                 </div>
             `;
             masonryContainer.append(cardHtml);
+        });
+
+        // Add click event to each card
+        masonryContainer.find('.card').click(function () {
+            const audioData = $(this).data('audio');
+            playAudio(audioData);
         });
     }
 
@@ -60,7 +66,7 @@ $(document).ready(function () {
         };
     }
 
-    $(window).scroll(debounce(function() {
+    $(window).scroll(debounce(function () {
         if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
             loadMore();
         }
@@ -69,12 +75,39 @@ $(document).ready(function () {
     // Initial load
     loadMore();
 
+    var aplayer = new APlayer({
+            container: document.getElementById('aplayer'),
+            audio: {
+                name: 'name',
+                artist: 'artist',
+                cover: 'https://fakeimg.pl/300x300',
+                listFolded: true,
+                theme: '#b7daff',
+            }
+        });
+
+    function playAudio(audioData) {
+        aplayer = new APlayer({
+            container: document.getElementById('aplayer'),
+            audio: {
+                name: audioData.title,
+                artist: audioData.text,
+                url: audioData.uri,
+                cover: 'https://fakeimg.pl/300x300',
+                listFolded: true,
+                theme: '#b7daff',
+            }
+        });
+        aplayer.play();
+    }
+
+
     // Back to top button
     const backToTopBtn = $('<button id="back-to-top" class="btn btn-primary">Top</button>');
     $('body').append(backToTopBtn);
     backToTopBtn.hide();
 
-    $(window).scroll(function() {
+    $(window).scroll(function () {
         if ($(window).scrollTop() > 300) {
             backToTopBtn.fadeIn();
         } else {
@@ -82,7 +115,7 @@ $(document).ready(function () {
         }
     });
 
-    backToTopBtn.click(function() {
+    backToTopBtn.click(function () {
         $('html, body').animate({ scrollTop: 0 }, '300');
     });
 
@@ -102,11 +135,11 @@ $(document).ready(function () {
         }
     }
 
-    $('#login-btn').click(function() {
+    $('#login-btn').click(function () {
         $('#loginModal').modal('show');
     });
 
-    $('#submit-login').click(function() {
+    $('#submit-login').click(function () {
         const username = $('#login-username').val();
         const password = $('#login-password').val();
         if (username === mockUsername && password === mockPassword) {
@@ -118,16 +151,16 @@ $(document).ready(function () {
         }
     });
 
-    $('#logout-btn').click(function() {
+    $('#logout-btn').click(function () {
         isLoggedIn = false;
         updateLoginState();
     });
 
-    $('#subscribe-btn').click(function() {
+    $('#subscribe-btn').click(function () {
         $('#subscribeModal').modal('show');
     });
 
-    $('#submit-subscription').click(function() {
+    $('#submit-subscription').click(function () {
         const url = $('#subscription-url').val();
         if (url) {
             console.log("Subscribed to:", url);
