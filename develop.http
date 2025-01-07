@@ -1,4 +1,5 @@
-@jwt_cookie = TODO: replace with jwt cookie
+@jwt_cookie = 
+@content_credit = 
 
 ### /auth/register
 POST http://localhost:8080/auth/register
@@ -37,11 +38,11 @@ Authorization: {{jwt_cookie}}
 Content-Type: application/json
 
 {
-  "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+  "channel_id": "@MeiTouNews"
 }
 
 ### Delete Subscription
-POST http://localhost:8080/subscription/delete
+POST http://localhost:8080/buzz/subscription/delete
 Authorization: {{jwt_cookie}}
 Content-Type: application/json
 
@@ -50,5 +51,9 @@ Content-Type: application/json
 }
 
 ### List Content
-GET http://localhost:8080/content/list?userCredit=validUser1
+GET http://localhost:8080/buzz/content/list
+Authorization: {{jwt_cookie}}
+
+### Download Content
+GET http://localhost:8080/buzz/content/stream/5TaKogc4HEM
 Authorization: {{jwt_cookie}}
