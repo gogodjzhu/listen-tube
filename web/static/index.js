@@ -4,51 +4,51 @@ $(document).ready(function () {
     const loadingIndicator = $('<div id="loading-indicator" class="text-center my-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
 
     function fetchData(page) {
-        // Mock API call with pagination
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const data = [];
-                for (let i = 0; i < itemsPerPage; i++) {
-                    data.push({
-                        title: `Card ${((page - 1) * itemsPerPage) + i + 1}`,
-                        text: `Content for card ${((page - 1) * itemsPerPage) + i + 1}`,
-                        img: "https://fakeimg.pl/300x300",
-                        uri: "http://127.0.0.1:8080/static/01.mp3"
-                    });
-                }
-                resolve(data);
-            }, 1000);
+        return $.ajax({
+            url: '/buzz/content/list',
+            method: 'POST',
+            data: JSON.stringify({ PageIndex: page, PageSize: itemsPerPage }),
+            headers: {
+                'Authorization': 'Bearer ' + getToken(),
+                'Content-Type': 'application/json'
+            },
+            success: function (data) {
+                return data.contents;
+            },
+            error: function () {
+                alert("Failed to fetch data");
+            }
         });
     }
 
-    function renderMasonry(data) {
+    function renderMasonry(contents) {
         const masonryContainer = $('#masonry');
-        data.forEach(item => {
+        contents.forEach(item => {
             const cardHtml = `
                 <div class="col-md-12 mb-4">
-                    <div class="card d-flex flex-row" data-audio='${JSON.stringify(item)}'>
-                        <img src="${item.img}" class="card-img-left" alt="...">
+                    <div class="card d-flex flex-row" data-credit="${item.content_credit}">
+                        <div class="card-img-left-wrapper">
+                            <img src="${item.thumbnail}" class="card-img-left" alt="...">
+                        </div>
                         <div class="card-body">
                             <h5 class="card-title">${item.title}</h5>
-                            <p class="card-text">${item.text}</p>
+                            <p class="card-text">${item.platform}</p>
                         </div>
                     </div>
                 </div>
             `;
-            masonryContainer.append(cardHtml);
-        });
-
-        // Add click event to each card
-        masonryContainer.find('.card').click(function () {
-            const audioData = $(this).data('audio');
-            playAudio(audioData);
+            const cardElement = $(cardHtml);
+            cardElement.click(function () {
+                playAudio(item);
+            });
+            masonryContainer.append(cardElement);
         });
     }
 
     function loadMore() {
         $('body').append(loadingIndicator);
         fetchData(page).then(data => {
-            renderMasonry(data);
+            renderMasonry(data.contents);
             page++;
             loadingIndicator.remove();
         });
@@ -76,31 +76,30 @@ $(document).ready(function () {
     loadMore();
 
     var aplayer = new APlayer({
-            container: document.getElementById('aplayer'),
-            audio: {
-                name: 'name',
-                artist: 'artist',
-                cover: 'https://fakeimg.pl/300x300',
-                listFolded: true,
-                theme: '#b7daff',
-            }
-        });
+        container: document.getElementById('aplayer'),
+        audio: {
+            name: 'name',
+            artist: 'artist',
+            cover: 'https://fakeimg.pl/300x300',
+            listFolded: true,
+            theme: '#b7daff',
+        }
+    });
 
-    function playAudio(audioData) {
+    function playAudio(data) {
         aplayer = new APlayer({
             container: document.getElementById('aplayer'),
             audio: {
-                name: audioData.title,
-                artist: audioData.text,
-                url: audioData.uri,
-                cover: 'https://fakeimg.pl/300x300',
+                name: data.title,
+                artist: data.text,
+                url: `/buzz/content/stream/` + data.content_credit,
+                cover: data.thumbnail,
                 listFolded: true,
                 theme: '#b7daff',
             }
         });
         aplayer.play();
     }
-
 
     // Back to top button
     const backToTopBtn = $('<button id="back-to-top" class="btn btn-primary">Top</button>');
@@ -119,42 +118,96 @@ $(document).ready(function () {
         $('html, body').animate({ scrollTop: 0 }, '300');
     });
 
-    // Mock login state
-    let isLoggedIn = false;
-    const mockUsername = "user";
-    const mockPassword = "pass";
+    // Function to save JWT token
+    function saveToken(token) {
+        localStorage.setItem('jwtToken', token);
+    }
 
+    // Function to get JWT token
+    function getToken() {
+        return localStorage.getItem('jwtToken');
+    }
+
+    // Function to remove JWT token
+    function removeToken() {
+        localStorage.removeItem('jwtToken');
+    }
+
+    // Function to update login state
     function updateLoginState() {
-        if (isLoggedIn) {
-            $('#login-btn').hide();
-            $('#user-info').removeClass('d-none');
-            $('#username').text(mockUsername);
+        const token = getToken();
+        if (token) {
+            $.ajax({
+                url: '/auth/current_user',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (data) {
+                    $('#login-btn').hide();
+                    $('#user-info').removeClass('d-none');
+                    $('#username').text(data.username);
+                },
+                error: function () {
+                    removeToken();
+                    $('#login-btn').show();
+                    $('#user-info').addClass('d-none');
+                }
+            });
         } else {
             $('#login-btn').show();
             $('#user-info').addClass('d-none');
         }
     }
 
+    // Login button click event
     $('#login-btn').click(function () {
         $('#loginModal').modal('show');
     });
 
+    // Submit login button click event
     $('#submit-login').click(function () {
         const username = $('#login-username').val();
         const password = $('#login-password').val();
-        if (username === mockUsername && password === mockPassword) {
-            isLoggedIn = true;
-            updateLoginState();
-            $('#loginModal').modal('hide');
-        } else {
-            alert("Invalid credentials");
+        $.ajax({
+            url: '/auth/login',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ username: username, password: password }),
+            success: function (data) {
+                saveToken(data.token);
+                updateLoginState();
+                $('#loginModal').modal('hide');
+            },
+            error: function () {
+                alert("Invalid credentials");
+            }
+        });
+    });
+
+    // Logout button click event
+    $('#logout-btn').click(function () {
+        const token = getToken();
+        if (token) {
+            $.ajax({
+                url: '/auth/logout',
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function () {
+                    removeToken();
+                    updateLoginState();
+                },
+                error: function () {
+                    alert("Failed to logout");
+                }
+            });
         }
     });
 
-    $('#logout-btn').click(function () {
-        isLoggedIn = false;
-        updateLoginState();
-    });
+    // Initial login state update
+    updateLoginState();
 
     $('#subscribe-btn').click(function () {
         $('#subscribeModal').modal('show');

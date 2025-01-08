@@ -1,5 +1,5 @@
-@jwt_cookie = 
-@content_credit = 
+@jwt_cookie = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzYyNzE4MzYsIm9yaWdfaWF0IjoxNzM2MjY4MjM2LCJ1c2VyY3JlZGl0IjoiJDJhJDEwJE9RSWs2NU52Ui5nL1kxLmtrV2lyR09jRHp0dUw5ZGJhR2NrNnJENHFNN2l5Y25XSWhQek9PIiwidXNlcm5hbWUiOiJ2YWxpZFVzZXIifQ.KIqwMu7is51wusGevb7E5adUJ7sBEoD7KLExeVX3fC8
+@content_credit = 4rz8b_UTO1s
 
 ### /auth/register
 POST http://localhost:8080/auth/register
@@ -19,14 +19,26 @@ Content-Type: application/json
   "username": "validUser",
   "password": "validPassword"
 }
+### `/auth/login` return jwt token:
+# {
+#   "code": 200,
+#   "expire": "2025-01-08T00:35:28+08:00",
+#   "token": "tttt"
+# }
 
 ### /auth/current_user
 GET http://localhost:8080/auth/current_user
 Authorization: {{jwt_cookie}}
+### `/auth/login` return current user:
+# {
+#   "UserName": "validUser",
+#   "UserCredit": "uuuu"
+# }
 
 ### /auth/logout
 POST http://localhost:8080/auth/logout
 Authorization: {{jwt_cookie}}
+### `/auth/logout` logout
 
 ### /buzz/subscription/list
 GET http://localhost:8080/buzz/subscription/list?userCredit=validUser
@@ -41,7 +53,7 @@ Content-Type: application/json
   "channel_id": "@MeiTouNews"
 }
 
-### Delete Subscription
+### /buzz/subscription/delete
 POST http://localhost:8080/buzz/subscription/delete
 Authorization: {{jwt_cookie}}
 Content-Type: application/json
@@ -50,10 +62,32 @@ Content-Type: application/json
   "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
 }
 
-### List Content
-GET http://localhost:8080/buzz/content/list
+### /buzz/content/list
+POST http://localhost:8080/buzz/content/list
 Authorization: {{jwt_cookie}}
+Content-Type: application/json
 
-### Download Content
-GET http://localhost:8080/buzz/content/stream/5TaKogc4HEM
+{
+  "PageIndex": 1,
+  "PageSize": 2
+}
+### `/buzz/content/list` return content list:
+# {
+#   "contents": [
+#    {
+#      "platform": "youtube",
+#      "channel_credit": "ch_credit",
+#      "content_credit": "co_credit",
+#      "title": "ti_name",
+#      "thumbnail": "https://xxx.jpg",
+#      "state": 3,
+#      "create_at": 1734885339,
+#      "update_at": 1734885339
+#    }
+#   ]
+# }
+
+### /buzz/content/stream
+GET http://localhost:8080/buzz/content/stream/{{content_credit}}
 Authorization: {{jwt_cookie}}
+### `/buzz/content/stream` return content stream with `Content-Type: audio/mp3`
