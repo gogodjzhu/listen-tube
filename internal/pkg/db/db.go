@@ -4,8 +4,8 @@ import "C"
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 	logger "gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 type DatabaseSource struct {
@@ -14,6 +14,13 @@ type DatabaseSource struct {
 
 type Config struct {
 	DSN string
+}
+
+type Pagenation struct {
+	PageIndex int
+	PageSize  int
+	OrderBy   []string
+	Order     string
 }
 
 func NewDatabaseSource(conf *Config) (*DatabaseSource, error) {
@@ -52,6 +59,24 @@ func (d *BasicMapper[T]) Insert(t *T) (int64, error) {
 func (d *BasicMapper[T]) Select(where *T) ([]*T, error) {
 	var tArr []*T
 	result := d.DB.Where(where).Find(&tArr)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return tArr, nil
+}
+
+func (d *BasicMapper[T]) SelectWithPage(where *T, p *Pagenation) ([]*T, error) {
+	var tArr []*T
+	result := d.DB.Where(where).Limit(p.PageSize).Offset(p.PageIndex * p.PageSize).Find(&tArr)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return tArr, nil
+}
+
+func (d *BasicMapper[T]) SelectBySQL(sql string, args ...interface{}) ([]*T, error) {
+	var tArr []*T
+	result := d.DB.Raw(sql, args...).Find(&tArr)
 	if result.Error != nil {
 		return nil, result.Error
 	}

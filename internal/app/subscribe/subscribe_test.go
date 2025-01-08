@@ -406,7 +406,7 @@ func TestSubscribeService_ListContent(t *testing.T) {
 			teardownTest := setupTest(t, s)
 			defer teardownTest(t)
 
-			got, err := s.ListContent(tt.args.userCredit)
+			got, err := s.ListContent(tt.args.userCredit, 0, 1)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SubscribeService.ListContent() error = %v, wantErr %v", err, tt.wantErr)
 				return

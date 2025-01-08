@@ -4,11 +4,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
-	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
@@ -56,9 +54,9 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 		ctx.JSON(http.StatusOK, result)
 	})
 
-	r.GET("/content/list", func(ctx *gin.Context) {
+	r.POST("/content/list", func(ctx *gin.Context) {
 		var req ListContentRequest
-		if err := ctx.ShouldBindQuery(&req); err != nil {
+		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -70,22 +68,8 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 	// 新增的端点，用于流式传输音频文件
 	r.GET("/content/stream/:contentCredit", func(ctx *gin.Context) {
 		contentCredit := ctx.Param("contentCredit")
-		userinfo := jwt.GetCurrentUser(ctx)
-		contents, err := c.subscribeService.ListContent(userinfo.UserCredit)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		var content *dao.Content
-		for _, c := range contents {
-			if c.ContentCredit == contentCredit {
-				content = c
-				break
-			}
-		}
-
-		if content == nil {
+		content, err := c.subscribeService.GetContent(contentCredit)
+		if err != nil || content == nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Content not found"})
 			return
 		}
@@ -134,8 +118,8 @@ func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubsc
 			Platform:      "youtube", // TODO: get platform
 			ChannelCredit: sub.ChannelCredit,
 			ChannelName:   "", // TODO: get channel name
-			CreateAt:      sub.CreateAt,
-			UpdateAt:      sub.UpdateAt,
+			CreateAt:      sub.CreateAt.Unix(),
+			UpdateAt:      sub.UpdateAt.Unix(),
 		}
 	}
 	return &ListSubscriptionResult{Subscriptions: result, Code: 0, Msg: "ok"}
@@ -143,7 +127,7 @@ func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubsc
 
 // ListContent lists all contents for a user.
 func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentRequest) *ListContentResult {
-	contents, err := c.subscribeService.ListContent(userInfo.UserCredit)
+	contents, err := c.subscribeService.ListContent(userInfo.UserCredit, req.PageIndex, req.PageSize)
 	if err != nil {
 		return &ListContentResult{Code: 1, Msg: err.Error()}
 	}
@@ -156,8 +140,8 @@ func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentReq
 			Title:         content.Title,
 			Thumbnail:     content.Thumbnail,
 			State:         int(content.State),
-			CreateAt:      content.CreateAt,
-			UpdateAt:      content.UpdateAt,
+			CreateAt:      content.CreateAt.Unix(),
+			UpdateAt:      content.UpdateAt.Unix(),
 		}
 	}
 	return &ListContentResult{Contents: result, Code: 0, Msg: "ok"}
@@ -191,6 +175,8 @@ type ListSubscriptionResult struct {
 }
 
 type ListContentRequest struct {
+	PageIndex int `form:"page_index"`
+	PageSize  int `form:"page_size"`
 }
 
 type ListContentResult struct {
@@ -200,20 +186,20 @@ type ListContentResult struct {
 }
 
 type Subscription struct {
-	Platform      string    `json:"platform"`
-	ChannelCredit string    `json:"channel_credit"`
-	ChannelName   string    `json:"channel_name"`
-	CreateAt      time.Time `json:"create_at"`
-	UpdateAt      time.Time `json:"update_at"`
+	Platform      string `json:"platform"`
+	ChannelCredit string `json:"channel_credit"`
+	ChannelName   string `json:"channel_name"`
+	CreateAt      int64  `json:"create_at"`
+	UpdateAt      int64  `json:"update_at"`
 }
 
 type Content struct {
-	Platform      string    `json:"platform"`
-	ChannelCredit string    `json:"channel_credit"`
-	ContentCredit string    `json:"content_credit"`
-	Title         string    `json:"title"`
-	Thumbnail     string    `json:"thumbnail"`
-	State         int       `json:"state"`
-	CreateAt      time.Time `json:"create_at"`
-	UpdateAt      time.Time `json:"update_at"`
+	Platform      string `json:"platform"`
+	ChannelCredit string `json:"channel_credit"`
+	ContentCredit string `json:"content_credit"`
+	Title         string `json:"title"`
+	Thumbnail     string `json:"thumbnail"`
+	State         int    `json:"state"`
+	CreateAt      int64  `json:"create_at"`
+	UpdateAt      int64  `json:"update_at"`
 }

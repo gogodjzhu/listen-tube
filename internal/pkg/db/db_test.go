@@ -326,3 +326,93 @@ func TestNewBasicMapper(t *testing.T) {
 		})
 	}
 }
+
+func TestBasicMapper_SelectWithPage(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	tests := []struct {
+		name string
+		args struct {
+			where *TestTable
+			page  *Pagenation
+		}
+		want    []*TestTable
+		wantErr bool
+	}{
+		{
+			name: "Select with pagination",
+			args: struct {
+				where *TestTable
+				page  *Pagenation
+			}{
+				where: &TestTable{Enum: Enum(1)},
+				page:  &Pagenation{PageIndex: 0, PageSize: 1},
+			},
+			want:    []*TestTable{testTable},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapper := MockTestTableMapper()
+			teardownTest := setupTest(t, mapper)
+			defer teardownTest(t)
+
+			got, err := mapper.SelectWithPage(tt.args.where, tt.args.page)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SelectWithPage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SelectWithPage() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBasicMapper_SelectBySQL(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	tests := []struct {
+		name string
+		args struct {
+			sql  string
+			args []interface{}
+		}
+		want    []*TestTable
+		wantErr bool
+	}{
+		{
+			name: "Select by SQL",
+			args: struct {
+				sql  string
+				args []interface{}
+			}{
+				sql:  "SELECT * FROM t_test_table WHERE id = ?",
+				args: []interface{}{1},
+			},
+			want:    []*TestTable{testTable},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapper := MockTestTableMapper()
+			teardownTest := setupTest(t, mapper)
+			defer teardownTest(t)
+
+			got, err := mapper.SelectBySQL(tt.args.sql, tt.args.args...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SelectBySQL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SelectBySQL() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

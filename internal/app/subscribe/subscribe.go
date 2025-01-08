@@ -39,7 +39,6 @@ func NewSubscribeService(mapper *dao.UnionMapper, downloader *downloader.Downloa
 		fetcher:            fetcher,
 	}
 
-
 	return ss, nil
 }
 
@@ -211,7 +210,8 @@ func (s *SubscribeService) ListSubscription(userCredit string) ([]*dao.Subscript
 	return s.subscriptionMapper.Select(&dao.Subscription{UserCredit: userCredit})
 }
 
-func (s *SubscribeService) ListContent(userCredit string) ([]*dao.Content, error) {
+// ListContent lists all contents for a user.
+func (s *SubscribeService) ListContent(userCredit string, pageIndex, pageSize int) ([]*dao.Content, error) {
 	// check if the user exists
 	user, err := s.userMapper.Select(&dao.User{Credit: userCredit})
 	if err != nil || len(user) == 0 {
@@ -223,17 +223,24 @@ func (s *SubscribeService) ListContent(userCredit string) ([]*dao.Content, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list subscriptions")
 	}
+	channelCredits := make([]interface{}, 0)
+	for _, subscription := range subscriptions {
+		channelCredits = append(channelCredits, subscription.ChannelCredit)
+	}
 
 	// list the contents of the subscribed channels
-	contents := make([]*dao.Content, 0)
-	for _, subscription := range subscriptions {
-		c, err := s.contentMapper.Select(&dao.Content{ChannelCredit: subscription.ChannelCredit})
-		if err != nil {
-			return nil, fmt.Errorf("failed to list contents")
-		}
-		contents = append(contents, c...)
+	pageSql := "SELECT * FROM t_content WHERE channel_credit IN (?) ORDER BY create_at DESC LIMIT ? OFFSET ?"
+	return s.contentMapper.SelectBySQL(pageSql, channelCredits, pageSize, (pageIndex - 1) * pageSize)
+}
+
+// GetContent gets a content by its credit.
+func (s *SubscribeService) GetContent(contentCredit string) (*dao.Content, error) {
+	// list the content by its credit
+	contents, err := s.contentMapper.Select(&dao.Content{ContentCredit: contentCredit})
+	if err != nil || len(contents) == 0 {
+		return nil, fmt.Errorf("content does not exist")
 	}
-	return contents, nil
+	return contents[0], nil
 }
 
 // FetchContent fetches content for all subscriptions.

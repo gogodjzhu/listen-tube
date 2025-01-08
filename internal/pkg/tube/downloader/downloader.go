@@ -110,16 +110,14 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 	messageChan := make(ioutil.ChanWriter)
 	defer close(messageChan)
 	go func() {
-		pattern := regexp.MustCompile(`(\d+\.\d+)%`)
+		percentagePattern := regexp.MustCompile(`\[download\]\s+(\d+\.\d+|\d+)%\s+of\s+.+\s+in`)
 		for msg := range messageChan {
 			for _, m := range strings.Split(msg, "\n") {
 				if len(strings.TrimSpace(m)) != 0 {
-					if strings.Contains(m, "[download]") {
-						match := pattern.FindStringSubmatch(m)
-						if len(match) > 1 {
-							progress, _ := strconv.ParseFloat(match[1], 64)
-							result.Progress = progress
-						}
+					match := percentagePattern.FindStringSubmatch(m)
+					if len(match) > 1 {
+						progress, _ := strconv.ParseFloat(match[1], 64)
+						result.Progress = progress
 					}
 					log.Infof("downloading %s: %s", opt.ContentCredit, m)
 				}

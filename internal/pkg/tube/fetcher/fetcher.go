@@ -92,6 +92,7 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 		t := gjson.Get(thumbnail.Raw, "url")
 		thumbnails = append(thumbnails, t.Str)
 	}
+	// TODO: ignore member
 
 	return &Result{
 		Platform:    "youtube",
