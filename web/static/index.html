@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
 </head>
 <body>
-<header class="bg-light py-3">
-    <div class="container d-flex justify-content-between align-items-center">
+<div id="header" class="bg-light py-2 px-3 w-100 header">
+    <div class="d-flex justify-content-between align-items-center">
         <div class="search">
             <input type="text" class="form-control" placeholder="Search...">
             <i class="fa fa-search"></i>
@@ -25,11 +25,17 @@
             </span>
         </div>
     </div>
-</header>
+</div>
 <div class="container">
-    <div class="row" id="masonry">
+    <div class="row py-2 px-3 col-md-12" id="masonry">
         <!-- Repeat similar blocks for more cards -->
     </div>
+</div>
+<div id="sidebar" class="sidebar collapsed">
+    <button id="sidebar-toggle" class="btn btn-secondary">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="sidebar-content"></div>
 </div>
 <!-- Login Modal -->
 <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">

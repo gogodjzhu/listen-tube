@@ -7,15 +7,39 @@ body {
     color: #343a40;
 }
 
+.container.sidebar-expanded {
+    margin-left: 250px; /* Adjust the main content margin when sidebar is expanded */
+    transition: margin-left 0.3s ease;
+}
+
+.container.sidebar-collapsed {
+    margin-left: 60px; /* Adjust the main content margin when sidebar is collapsed */
+    transition: margin-left 0.3s ease;
+}
+
+.search.sidebar-expanded {
+    margin-left: 250px; /* Adjust the search input margin when sidebar is expanded */
+    transition: margin-left 0.3s ease;
+}
+
+.search.sidebar-collapsed {
+    margin-left: 60px; /* Adjust the search input margin when sidebar is collapsed */
+    transition: margin-left 0.3s ease;
+}
+
+.container {
+    padding: 0; /* Adjust the container's padding to be 0 */
+    margin: 0; /* Adjust the container's margin to be 0 */
+    width: 100%; /* Ensure the container spans the full width */
+}
+
 .height {
     height: 100vh
 }
 
-header {
+.bg-light {
     background-color: #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    padding: 10px 0;
 }
 
 .search {
@@ -114,6 +138,11 @@ header {
     margin-bottom: 20px;
 }
 
+.header {
+    width: 100%; /* Ensure the header spans the entire width */
+    margin: 0; /* Remove any margin */
+}
+
 #user-controls {
     display: flex;
     align-items: center;
@@ -182,4 +211,60 @@ footer #aplayer {
     max-width: calc(100% - 10px); /* Ensure it doesn't overflow the image width */
     max-height: calc(100% - 10px); /* Ensure it doesn't overflow the image height */
     border-radius: 5px; /* Add rounded corners */
+}
+
+.sidebar {
+    position: fixed; /* Change back to fixed */
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 250px;
+    background-color: #f8f9fa;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+    overflow-y: auto;
+    z-index: 1; /* Ensure it is on the same z-index level as the main content */
+    padding-left: 10px; /* Add internal left padding */
+    padding-right: 10px; /* Add internal right padding */
+}
+
+.sidebar.collapsed {
+    width: 60px; /* Shorten the width instead of collapsing completely */
+}
+
+.sidebar {
+    padding: 10px 20px;
+}
+
+.sidebar.collapsed .sidebar-content {
+    display: none; /* Hide the content when collapsed */
+}
+
+.sidebar .sidebar-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+#sidebar-toggle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 40px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+#sidebar-toggle i {
+    font-size: 20px;
+    color: gray; /* Set the icon color to gray */
+}
+
+.sidebar.collapsed #sidebar-toggle {
+    justify-content: center; /* Center the toggle button when sidebar is collapsed */
+}
+
+.sidebar-expanded #sidebar-toggle {
+    justify-content: flex-start; /* Align the toggle button to the left when sidebar is expanded */
 }

@@ -27,7 +27,7 @@ $(document).ready(function () {
         const masonryContainer = $('#masonry');
         contents.forEach(item => {
             const cardHtml = `
-                <div class="col-md-12 mb-1">
+                <div>
                     <div class="card d-flex flex-row" data-credit="${item.content_credit}">
                         <div class="card-img-left-wrapper">
                             <img src="${item.thumbnail}" class="card-img-left" alt="...">
@@ -225,4 +225,30 @@ $(document).ready(function () {
 
     // Initial login state update
     updateLoginState();
+
+    // Ensure the container and search input have the sidebar-collapsed class initially
+    $('.container').addClass('sidebar-collapsed');
+    $('.search').addClass('sidebar-collapsed');
+
+    // Sidebar toggle functionality
+    $('#sidebar-toggle').click(function () {
+        $('#sidebar').toggleClass('collapsed');
+        $('#sidebar').toggleClass('sidebar-expanded');
+        $('.container').toggleClass('sidebar-expanded sidebar-collapsed');
+        $('.search').toggleClass('sidebar-expanded sidebar-collapsed');
+
+        // Change the icon based on the sidebar state
+        if ($('#sidebar').hasClass('collapsed')) {
+            $('#sidebar-toggle i').removeClass('fa-chevron-left').addClass('fa-bars');
+        } else {
+            $('#sidebar-toggle i').removeClass('fa-bars').addClass('fa-chevron-left');
+        }
+    });
+
+    // Populate sidebar with placeholder items
+    const sidebarItems = ['Item 1', 'Item 2', 'Item 3', 'Item 4'];
+    const sidebar = $('#sidebar .sidebar-content');
+    sidebarItems.forEach(item => {
+        sidebar.append(`<div class="sidebar-item">${item}</div>`);
+    });
 });
