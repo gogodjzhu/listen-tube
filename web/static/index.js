@@ -1,7 +1,9 @@
 $(document).ready(function () {
     let page = 1;
     const itemsPerPage = 10;
+    let isLoading = false;
     const loadingIndicator = $('<div id="loading-indicator" class="text-center my-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+    const noMoreContentMessage = $('<div id="no-more-content" class="text-center my-4">没有更多内容</div>');
 
     function fetchData(page) {
         return $.ajax({
@@ -25,14 +27,16 @@ $(document).ready(function () {
         const masonryContainer = $('#masonry');
         contents.forEach(item => {
             const cardHtml = `
-                <div class="col-md-12 mb-4">
+                <div class="col-md-12 mb-1">
                     <div class="card d-flex flex-row" data-credit="${item.content_credit}">
                         <div class="card-img-left-wrapper">
                             <img src="${item.thumbnail}" class="card-img-left" alt="...">
+                            <div class="media-length">${item.length}</div>
                         </div>
                         <div class="card-body">
-                            <h5 class="card-title">${item.title}</h5>
-                            <p class="card-text">${item.platform}</p>
+                            <h5 class="card-title text-truncate">${item.name}</h5>
+                            <p class="card-text text-truncate">${item.channel_name}</p>
+                            <p class="card-text text-truncate">${item.published_time}</p>
                         </div>
                     </div>
                 </div>
@@ -46,11 +50,18 @@ $(document).ready(function () {
     }
 
     function loadMore() {
+        if (isLoading) return;
+        isLoading = true;
         $('body').append(loadingIndicator);
         fetchData(page).then(data => {
-            renderMasonry(data.contents);
-            page++;
+            if (data.contents.length === 0) {
+                $('body').append(noMoreContentMessage);
+            } else {
+                renderMasonry(data.contents);
+                page++;
+            }
             loadingIndicator.remove();
+            isLoading = false;
         });
     }
 
@@ -67,32 +78,23 @@ $(document).ready(function () {
     }
 
     $(window).scroll(debounce(function () {
-        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 50) {
             loadMore();
         }
-    }, 200));
+    }, 100));
 
     // Initial load
     loadMore();
 
-    var aplayer = new APlayer({
-        container: document.getElementById('aplayer'),
-        audio: {
-            name: 'name',
-            artist: 'artist',
-            cover: 'https://fakeimg.pl/300x300',
-            listFolded: true,
-            theme: '#b7daff',
-        }
-    });
+    var aplayer = null;
 
     function playAudio(data) {
         aplayer = new APlayer({
             container: document.getElementById('aplayer'),
             audio: {
-                name: data.title,
-                artist: data.text,
-                url: `/buzz/content/stream/` + data.content_credit,
+                name: data.name,
+                artist: data.channel_name,
+                url: `/buzz/content/stream/` + data.credit,
                 cover: data.thumbnail,
                 listFolded: true,
                 theme: '#b7daff',
@@ -150,13 +152,11 @@ $(document).ready(function () {
                 },
                 error: function () {
                     removeToken();
-                    $('#login-btn').show();
-                    $('#user-info').addClass('d-none');
+                    window.location.href = '/static/login.html'; // Redirect to login page
                 }
             });
         } else {
-            $('#login-btn').show();
-            $('#user-info').addClass('d-none');
+            window.location.href = '/static/login.html'; // Redirect to login page
         }
     }
 

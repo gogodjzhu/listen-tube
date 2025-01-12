@@ -76,6 +76,12 @@ header {
     height: auto;
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
+    padding: 5px; /* Add padding to the image */
+}
+
+#masonry .card-body {
+    flex: 1;
+    min-width: 0; /* Ensure the text truncation works within the flex container */
 }
 
 #back-to-top {
@@ -141,4 +147,39 @@ footer {
 
 footer #aplayer {
     width: 100%;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-img-left-wrapper {
+    position: relative;
+    width: 150px; /* Fixed width for the image container */
+    height: auto; /* Adjust height automatically */
+    overflow: hidden;
+}
+
+.card-img-left {
+    width: 100%; /* Ensure the image takes the full width of the container */
+    height: auto; /* Maintain the aspect ratio */
+    object-fit: cover;
+}
+
+.media-length {
+    font-size: 8px;
+    color: white;
+    background-color: rgba(69, 69, 69, 0.7); /* Use rgba for semi-transparent background */
+    position: absolute;
+    bottom: 20px; /* Add some space from the bottom */
+    right: 7px; /* Add some space from the right */
+    padding: 2px 5px; /* Add some padding for better readability */
+    z-index: 1; /* Ensure it appears on top of the image */
+    width: auto; /* Ensure the width adjusts to the content */
+    height: auto; /* Ensure the height adjusts to the content */
+    max-width: calc(100% - 10px); /* Ensure it doesn't overflow the image width */
+    max-height: calc(100% - 10px); /* Ensure it doesn't overflow the image height */
+    border-radius: 5px; /* Add rounded corners */
 }

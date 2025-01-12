@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
+	utiltime "github.com/gogodjzhu/listen-tube/internal/pkg/util/time"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
@@ -131,14 +133,29 @@ func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentReq
 	if err != nil {
 		return &ListContentResult{Code: 1, Msg: err.Error()}
 	}
+	channelCredits := make(map[string]string)
+	for _, content := range contents {
+		if _, ok := channelCredits[content.ChannelCredit]; !ok {
+			channel, err := c.subscribeService.GetChannel(content.ChannelCredit)
+			if err != nil {
+				continue
+			}
+			channelCredits[content.ChannelCredit] = channel.Name
+		}
+	}
+
 	result := make([]*Content, len(contents))
 	for i, content := range contents {
 		result[i] = &Content{
 			Platform:      content.Platform,
+			Credit:        content.ContentCredit,
+			Name:          content.Title,
 			ChannelCredit: content.ChannelCredit,
-			ContentCredit: content.ContentCredit,
-			Title:         content.Title,
+			ChannelName:   channelCredits[content.ChannelCredit],
 			Thumbnail:     content.Thumbnail,
+			PublishedTime: utiltime.TranslateDuration2Accessibility(time.Now(), content.PublishedTime),
+			// format duration, format: 01:00:10, 10:10, 00:10
+			Length:        utiltime.FormatDuration(content.Length),
 			State:         int(content.State),
 			CreateAt:      content.CreateAt.Unix(),
 			UpdateAt:      content.UpdateAt.Unix(),
@@ -146,6 +163,8 @@ func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentReq
 	}
 	return &ListContentResult{Contents: result, Code: 0, Msg: "ok"}
 }
+
+
 
 type AddSubscriptionRequest struct {
 	ChannelID string `json:"channel_id"`
@@ -195,10 +214,13 @@ type Subscription struct {
 
 type Content struct {
 	Platform      string `json:"platform"`
+	Name          string `json:"name"`
+	Credit        string `json:"credit"`
+	ChannelName   string `json:"channel_name"`
 	ChannelCredit string `json:"channel_credit"`
-	ContentCredit string `json:"content_credit"`
-	Title         string `json:"title"`
 	Thumbnail     string `json:"thumbnail"`
+	PublishedTime string `json:"published_time"`
+	Length        string `json:"length"`
 	State         int    `json:"state"`
 	CreateAt      int64  `json:"create_at"`
 	UpdateAt      int64  `json:"update_at"`

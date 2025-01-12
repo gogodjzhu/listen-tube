@@ -104,7 +104,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 		Err:        nil,
 		Progress:   0,
 		ContentURL: "https://www.youtube.com/watch?v=" + opt.ContentCredit,
-		Output:     filepath.Join(outPath, opt.Rename+"."+opt.Format),
+		Output:     filepath.Join(outPath, "worstaudio."+opt.Format),
 	}
 
 	messageChan := make(ioutil.ChanWriter)
@@ -147,7 +147,6 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 
 type DownloadOption struct {
 	ContentCredit string // content credit
-	Rename        string // rename the downloaded file
 	Format        string // download format
 	Force         bool   // force download, delete the existing file
 }

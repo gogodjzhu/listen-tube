@@ -2,10 +2,14 @@ package fetcher
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/http"
+	utiltime "github.com/gogodjzhu/listen-tube/internal/pkg/util/time"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -63,21 +67,50 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 	initialDataStr += "}"
 
 	var contents []Content
-	selectedSection := gjson.Get(initialDataStr, "contents.twoColumnBrowseResultsRenderer.tabs.#(tabRenderer.selected=true)")
+	selectedSection := gjson.Get(initialDataStr, "contents.twoColumnBrowseResultsRenderer.tabs.#(tabRenderer.title=Videos)")
 	contentsRaws := gjson.Get(selectedSection.Raw, "tabRenderer.content.richGridRenderer.contents")
 	for _, content := range contentsRaws.Array() {
+		continuationItemRenderer := gjson.Get(content.Raw, "continuationItemRenderer")
+		if continuationItemRenderer.Exists() {
+			continue
+		}
 		videoRenderer := gjson.Get(content.Raw, "richItemRenderer.content.videoRenderer")
 		videoId := gjson.Get(videoRenderer.Raw, "videoId")
 		title := gjson.Get(videoRenderer.Raw, "title.runs.0.text")
-		thumbnail := gjson.Get(videoRenderer.Raw, "thumbnail.thumbnails.@reverse.0.url")
-		if videoId.Str == "" || title.Str == "" || thumbnail.Str == "" {
-			fmt.Println(content.Str)
+		if videoId.Str == "" || title.Str == "" {
+			log.Warnf("videoId or title is empty, skip. channel: %s", opt.ChannelCredit)
 			continue
 		}
+		thumbnail := gjson.Get(videoRenderer.Raw, "thumbnail.thumbnails.@reverse.0.url")
+		thumbnailStr := strings.Split(thumbnail.Str, "?")[0]
+		thumbnailStr = regexp.MustCompile(`hqdefault_custom_[0-9]+\.jpg`).ReplaceAllString(thumbnailStr, "hqdefault.jpg")
+		publishedTimeText := gjson.Get(videoRenderer.Raw, "publishedTimeText.simpleText")
+		publishedTime, err := utiltime.TranslateAccessibility2Duration(publishedTimeText.Str)
+		if err != nil {
+			log.Warnf("failed to parse published time: %s", publishedTimeText.Str)
+		}
+		lengthText := gjson.Get(videoRenderer.Raw, "lengthText.simpleText")
+		length, err := utiltime.TranslateDuration(lengthText.Str)
+		if err != nil {
+			log.Warnf("failed to parse length: %s", lengthText.Str)
+		}
+		membersOnly := false
+		badges := gjson.Get(videoRenderer.Raw, "badges")
+		if badges.Exists() {
+			for _, badge := range badges.Array() {
+				if gjson.Get(badge.Raw, "metadataBadgeRenderer.label").Str == "Members only" {
+					membersOnly = true
+					break
+				}
+			}
+		}
 		contents = append(contents, Content{
-			Credit:    videoId.Str,
-			Title:     title.Str,
-			Thumbnail: thumbnail.Str,
+			Credit:        videoId.Str,
+			Title:         title.Str,
+			Thumbnail:     thumbnailStr,
+			PublishedTime: time.Now().Add(-publishedTime),
+			Length:        length,
+			MembersOnly:   membersOnly,
 		})
 	}
 	metadata := gjson.Get(initialDataStr, "metadata.channelMetadataRenderer")
@@ -138,7 +171,10 @@ type Result struct {
 }
 
 type Content struct {
-	Credit    string
-	Title     string
-	Thumbnail string
+	Credit        string
+	Title         string
+	Thumbnail     string
+	PublishedTime time.Time
+	Length        time.Duration
+	MembersOnly   bool
 }

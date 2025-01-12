@@ -25,7 +25,7 @@ type Pagenation struct {
 
 func NewDatabaseSource(conf *Config) (*DatabaseSource, error) {
 	db, err := gorm.Open(sqlite.Open(conf.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, err

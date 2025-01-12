@@ -7,25 +7,29 @@ import (
 )
 
 type Content struct {
-	ID            uint         `gorm:"id;primaryKey;autoIncrement"`
-	Platform      string       `gorm:"platform"`
-	ChannelCredit string       `gorm:"channel_credit"`
-	Title         string       `gorm:"title"`
-	Thumbnail     string       `gorm:"thumbnail"`
-	ContentCredit string       `gorm:"content_credit"`
-	State         ContentState `gorm:"state"`
-	Path          string       `gorm:"path"`
-	CreateAt      time.Time    `gorm:"create_at"`
-	UpdateAt      time.Time    `gorm:"update_at"`
+	ID            uint          `gorm:"id;primaryKey;autoIncrement"`
+	Platform      string        `gorm:"platform"`
+	ChannelCredit string        `gorm:"channel_credit"`
+	Title         string        `gorm:"title"`
+	Thumbnail     string        `gorm:"thumbnail"`
+	ContentCredit string        `gorm:"content_credit"`
+	State         ContentState  `gorm:"state"`
+	Info          string        `gorm:"info"`
+	PublishedTime time.Time     `gorm:"published_time"`
+	Length        time.Duration `gorm:"length"`
+	Path          string        `gorm:"path"`
+	CreateAt      time.Time     `gorm:"create_at"`
+	UpdateAt      time.Time     `gorm:"update_at"`
 }
 
 type ContentState int
 
 const (
-	ContentStateInited ContentState = iota
-	ContentStatePrepared
-	ContentStateDownloading
-	ContentStateDownloaded
+	ContentStateFailed      ContentState = -1
+	ContentStateInited      ContentState = 0
+	ContentStatePrepared    ContentState = 1
+	ContentStateDownloading ContentState = 2
+	ContentStateDownloaded  ContentState = 3
 )
 
 func (Content) TableName() string {

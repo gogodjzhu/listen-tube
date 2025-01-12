@@ -34,7 +34,6 @@ func TestDownloader_Download(t *testing.T) {
 				ctx: context.Background(),
 				opt: &DownloadOption{
 					ContentCredit: "dQw4w9WgXcQ",
-					Rename:        "test_content",
 					Format:        "mp4",
 					Force:         true,
 				},

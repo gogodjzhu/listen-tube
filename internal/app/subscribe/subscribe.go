@@ -146,13 +146,22 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 			return fmt.Errorf("failed to create new channel")
 		}
 		for _, content := range result.Contents {
+			state := dao.ContentStatePrepared
+			info := "prepared"
+			if content.MembersOnly {
+				state = dao.ContentStateFailed
+				info = "skip for members only"
+			}
 			_, err := s.contentMapper.Insert(&dao.Content{
 				Platform:      string(result.Platform),
 				ChannelCredit: result.ChannelID,
 				Title:         content.Title,
 				Thumbnail:     content.Thumbnail,
 				ContentCredit: content.Credit,
-				State:         dao.ContentStatePrepared,
+				State:         state,
+				Info:          info,
+				PublishedTime: content.PublishedTime,
+				Length:        content.Length,
 				CreateAt:      time.Now(),
 				UpdateAt:      time.Now(),
 			})
@@ -229,8 +238,8 @@ func (s *SubscribeService) ListContent(userCredit string, pageIndex, pageSize in
 	}
 
 	// list the contents of the subscribed channels
-	pageSql := "SELECT * FROM t_content WHERE channel_credit IN (?) ORDER BY create_at DESC LIMIT ? OFFSET ?"
-	return s.contentMapper.SelectBySQL(pageSql, channelCredits, pageSize, (pageIndex - 1) * pageSize)
+	pageSql := "SELECT * FROM t_content WHERE state = 3 AND channel_credit IN (?) ORDER BY published_time DESC LIMIT ? OFFSET ?"
+	return s.contentMapper.SelectBySQL(pageSql, channelCredits, pageSize, (pageIndex-1)*pageSize)
 }
 
 // GetContent gets a content by its credit.
@@ -241,6 +250,16 @@ func (s *SubscribeService) GetContent(contentCredit string) (*dao.Content, error
 		return nil, fmt.Errorf("content does not exist")
 	}
 	return contents[0], nil
+}
+
+// GetChannel gets a channel by its credit.
+func (s *SubscribeService) GetChannel(channelCredit string) (*dao.Channel, error) {
+	// list the channel by its credit
+	channels, err := s.channelMapper.Select(&dao.Channel{ChannelCredit: channelCredit})
+	if err != nil || len(channels) == 0 {
+		return nil, fmt.Errorf("channel does not exist")
+	}
+	return channels[0], nil
 }
 
 // FetchContent fetches content for all subscriptions.
@@ -269,6 +288,9 @@ func (s *SubscribeService) FetchContent() (int, error) {
 				Thumbnail:     content.Thumbnail,
 				ContentCredit: content.Credit,
 				State:         dao.ContentStatePrepared,
+				Info:          "prepared",
+				PublishedTime: content.PublishedTime,
+				Length:        content.Length,
 				CreateAt:      time.Now(),
 				UpdateAt:      time.Now(),
 			}
@@ -311,7 +333,6 @@ func (s *SubscribeService) DownloadContent() error {
 		log.Infof("downloading content %s...", content.ContentCredit)
 		result, err := s.downloader.Download(context.Background(), &downloader.DownloadOption{
 			ContentCredit: content.ContentCredit,
-			Rename:        content.Title,
 			Format:        "mp3",
 			Force:         false,
 		})
@@ -332,7 +353,7 @@ func (s *SubscribeService) DownloadContent() error {
 			log.Errorf("failed to download content %s: %v", content.ContentCredit, result.Err)
 		}
 
-		log.Info("sleep 5 min before next download")
+		log.Info("sleep 2 min before next download")
 		time.Sleep(5 * time.Minute)
 	}
 	return nil

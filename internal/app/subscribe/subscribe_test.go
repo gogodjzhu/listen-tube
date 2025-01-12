@@ -417,3 +417,21 @@ func TestSubscribeService_ListContent(t *testing.T) {
 		})
 	}
 }
+
+	func TestConstant_list(t *testing.T) {
+		if dao.ContentStateFailed != -1 {
+			t.Errorf("ContentStateFailed = %v, want -1", dao.ContentStateFailed)
+		}
+		if dao.ContentStateInited != 0 {
+			t.Errorf("ContentStateInited = %v, want 0", dao.ContentStateInited)
+		}
+		if dao.ContentStatePrepared != 1 {
+			t.Errorf("ContentStatePrepared = %v, want 1", dao.ContentStatePrepared)
+		}
+		if dao.ContentStateDownloading != 2 {
+			t.Errorf("ContentStateDownloading = %v, want 2", dao.ContentStateDownloading)
+		}
+		if dao.ContentStateDownloaded != 3 {
+			t.Errorf("ContentStateDownloaded = %v, want 3", dao.ContentStateDownloaded)
+		}
+	}
