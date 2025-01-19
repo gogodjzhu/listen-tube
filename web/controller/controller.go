@@ -14,6 +14,7 @@ import (
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
 	"github.com/gogodjzhu/listen-tube/web/controller/buzz"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
+	"github.com/gin-contrib/cors"
 )
 
 type Controller struct {
@@ -31,6 +32,12 @@ type Config struct {
 
 func NewController(ctx context.Context, conf *Config) (*Controller, error) {
 	r := gin.Default()
+	// TODO: only allow specific origin
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	r.Use(cors.New(config))
 	r.StaticFS("/static", http.Dir("web/static"))
 
 	// Create SubscribeService instance
