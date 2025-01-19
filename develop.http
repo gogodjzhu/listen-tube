@@ -41,8 +41,22 @@ Authorization: {{jwt_cookie}}
 ### `/auth/logout` logout
 
 ### /buzz/subscription/list
-GET http://localhost:8080/buzz/subscription/list?userCredit=validUser
+GET http://localhost:8080/buzz/subscription/list
 Authorization: {{jwt_cookie}}
+### `/buzz/subscription/list` return subscription list:
+# {
+# "subscriptions": [
+#    {
+#      "platform": "youtube",
+#      "channel_name": "yyy",
+#      "channel_thubnail": "https://xxx.jpg",
+#      "create_at": 1734885339,
+#      "update_at": 1734885339
+#    }
+#  ],
+#  "code": 0,
+#  "msg": "ok"
+#}
 
 ### /buzz/subscription/add
 POST http://localhost:8080/buzz/subscription/add

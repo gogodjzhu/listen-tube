@@ -116,12 +116,16 @@ func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubsc
 	}
 	result := make([]*Subscription, len(subscriptions))
 	for i, sub := range subscriptions {
+		channel, err := c.subscribeService.GetChannel(sub.ChannelCredit)
+		if err != nil {
+			continue
+		}
 		result[i] = &Subscription{
-			Platform:      "youtube", // TODO: get platform
-			ChannelCredit: sub.ChannelCredit,
-			ChannelName:   "", // TODO: get channel name
-			CreateAt:      sub.CreateAt.Unix(),
-			UpdateAt:      sub.UpdateAt.Unix(),
+			Platform:         "youtube", // TODO: get platform
+			ChannelName:      channel.Name,
+			ChannelThubmnail: channel.Thumbnails,
+			CreateAt:         sub.CreateAt.Unix(),
+			UpdateAt:         sub.UpdateAt.Unix(),
 		}
 	}
 	return &ListSubscriptionResult{Subscriptions: result, Code: 0, Msg: "ok"}
@@ -155,16 +159,14 @@ func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentReq
 			Thumbnail:     content.Thumbnail,
 			PublishedTime: utiltime.TranslateDuration2Accessibility(time.Now(), content.PublishedTime),
 			// format duration, format: 01:00:10, 10:10, 00:10
-			Length:        utiltime.FormatDuration(content.Length),
-			State:         int(content.State),
-			CreateAt:      content.CreateAt.Unix(),
-			UpdateAt:      content.UpdateAt.Unix(),
+			Length:   utiltime.FormatDuration(content.Length),
+			State:    int(content.State),
+			CreateAt: content.CreateAt.Unix(),
+			UpdateAt: content.UpdateAt.Unix(),
 		}
 	}
 	return &ListContentResult{Contents: result, Code: 0, Msg: "ok"}
 }
-
-
 
 type AddSubscriptionRequest struct {
 	ChannelID string `json:"channel_id"`
@@ -205,11 +207,11 @@ type ListContentResult struct {
 }
 
 type Subscription struct {
-	Platform      string `json:"platform"`
-	ChannelCredit string `json:"channel_credit"`
-	ChannelName   string `json:"channel_name"`
-	CreateAt      int64  `json:"create_at"`
-	UpdateAt      int64  `json:"update_at"`
+	Platform         string `json:"platform"`
+	ChannelName      string `json:"channel_name"`
+	ChannelThubmnail string `json:"channel_thumbnail"`
+	CreateAt         int64  `json:"create_at"`
+	UpdateAt         int64  `json:"update_at"`
 }
 
 type Content struct {

@@ -353,7 +353,7 @@ func (s *SubscribeService) DownloadContent() error {
 			log.Errorf("failed to download content %s: %v", content.ContentCredit, result.Err)
 		}
 
-		log.Info("sleep 2 min before next download")
+		log.Info("sleep 5 min before next download")
 		time.Sleep(5 * time.Minute)
 	}
 	return nil

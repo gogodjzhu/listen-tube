@@ -65,6 +65,36 @@ $(document).ready(function () {
         });
     }
 
+    function fetchSub() {
+        return $.ajax({
+            url: '/buzz/subscription/list',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + getToken()
+            },
+            success: function (data) {
+                return data.subscriptions;
+            },
+            error: function () {
+                alert("Failed to fetch subscriptions");
+            }
+        });
+    }
+
+    function renderSubscriptions(data) {
+        const sidebar = $('#sidebar .sidebar-content');
+        sidebar.empty();
+        data.subscriptions.forEach(sub => {
+            const subHtml = `
+                <div class="sidebar-item d-flex align-items-center">
+                    <img src="${sub.channel_thumbnail}" alt="${sub.channel_name}" class="sidebar-thumbnail">
+                    <p class="mb-0 ms-2">${sub.channel_name}</p>
+                </div>
+            `;
+            sidebar.append(subHtml);
+        });
+    }
+
     function debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -85,6 +115,7 @@ $(document).ready(function () {
 
     // Initial load
     loadMore();
+    fetchSub().then(renderSubscriptions);
 
     var aplayer = null;
 
@@ -243,12 +274,20 @@ $(document).ready(function () {
         } else {
             $('#sidebar-toggle i').removeClass('fa-bars').addClass('fa-chevron-left');
         }
+        adjustMasonryItemWidth();
     });
 
-    // Populate sidebar with placeholder items
-    const sidebarItems = ['Item 1', 'Item 2', 'Item 3', 'Item 4'];
-    const sidebar = $('#sidebar .sidebar-content');
-    sidebarItems.forEach(item => {
-        sidebar.append(`<div class="sidebar-item">${item}</div>`);
-    });
+    function adjustMasonryItemWidth() {
+        const masonryContainer = $('#masonry');
+        if ($('#sidebar').hasClass('collapsed')) {
+            masonryContainer.find('.card').css('width', 'calc(100% - 60px)');
+        } else {
+            masonryContainer.find('.card').css('width', 'calc(100% - 250px)');
+        }
+    }
+
+    // Initial load
+    loadMore();
+    fetchSub().then(renderSubscriptions);
+    adjustMasonryItemWidth();
 });

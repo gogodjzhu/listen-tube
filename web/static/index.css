@@ -88,11 +88,15 @@ body {
 #masonry .card {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    width: calc(100% - 60px); /* Default width when sidebar is collapsed */
     margin-bottom: 1rem;
     border: none;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-expanded #masonry .card {
+    width: calc(100% - 250px); /* Adjust width when sidebar is expanded */
 }
 
 #masonry .card-img-left {
@@ -267,4 +271,11 @@ footer #aplayer {
 
 .sidebar-expanded #sidebar-toggle {
     justify-content: flex-start; /* Align the toggle button to the left when sidebar is expanded */
+}
+
+.sidebar-thumbnail {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
 }
