@@ -37,6 +37,7 @@ func NewController(ctx context.Context, conf *Config) (*Controller, error) {
 	config.AllowAllOrigins = true
 	config.AllowCredentials = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(config))
 	r.StaticFS("/static", http.Dir("web/static"))
 
