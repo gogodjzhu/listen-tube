@@ -3,14 +3,15 @@
 
     <!-- header -->
     <div class="d-flex justify-content-between align-items-center">
-      <!-- sidebar toggle -->
-      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample"
-        aria-controls="offcanvasExample">
-        Button with data-bs-target
-      </button>
-      <!-- search -->
-      <div class="search w-50">
-        <input type="text" class="form-control" placeholder="Search..." v-model="form.search" @input="search">
+      <div class="d-flex w-50">
+        <!-- sidebar toggle -->
+        <button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample">
+          <i class="fa fa-bars fa-lg"></i>
+        </button>
+        <!-- search -->
+        <div class="search w-100">
+          <input type="text" class="form-control" placeholder="Search..." v-model="form.search" @input="search">
+        </div>
       </div>
       <!-- user info -->
       <Login ref="Login" />
