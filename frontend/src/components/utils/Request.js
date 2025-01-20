@@ -26,8 +26,8 @@ server.interceptors.response.use(
     return response.data
   },
   error => {
-    console.log('ERROR: ' + (error.response ? error.response.data : error.message))
-    return Promise.reject(new Error(error.response ? error.response.data.message : error.message))
+    console.log('ERROR: ' + error)
+    return Promise.reject(error)
   }
 )
 

@@ -44,42 +44,42 @@ export default {
   methods: {
     handleLogin () {
       Auth.login(this.username, this.password)
-        .then(() => {
-          this.updateCurrentUser()
+        .then((ret) => {
+          if (ret) {
+            this.updateCurrentUser()
+            this.showLoginModal = false
+            this.username = ''
+            this.password = ''
+          } else {
+            alert('Login failed: ' + ret)
+          }
         })
         .catch(error => {
-          alert('Login failed: ' + error.message)
-        })
-        .finally(() => {
-          this.showLoginModal = false
-          this.username = ''
-          this.password = ''
+          console.log('Internal error: ' + error)
         })
     },
     handleLogout () {
       Auth.logout()
-      this.updateCurrentUser()
-    },
-    getCurrentUser () {
-      return this.currentUser
+        .then(() => {
+          this.updateCurrentUser()
+        })
+        .catch(error => {
+          console.log('Internal error: ' + error)
+        })
     },
     // exange token for user info
     updateCurrentUser () {
-      if (localStorage.getItem('token') == null) {
-        this.currentUser = null
-        return
-      }
       Auth.currentUser()
-        .then(response => {
-          this.currentUser = {
-            username: response.UserName,
-            userCredit: response.UserCredit
-          }
+        .then(user => {
+          this.currentUser = user
         })
         .catch(error => {
-          alert('Get current user failed: ' + error.message)
+          console.log('Internal error: ' + error)
           this.currentUser = null
         })
+    },
+    getCurrentUser () {
+      return this.currentUser
     }
   },
   mounted () {
