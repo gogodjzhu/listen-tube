@@ -21,6 +21,9 @@
       <Stream />
     </div>
 
+    <!-- player -->
+    <div id="aplayer" class="aplayer-container"></div>
+
     <!-- sidebar offcanvas -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
       <div class="offcanvas-body">
@@ -73,5 +76,13 @@ export default {
 
 .content {
   margin-top: 60px; /* Adjust based on header height */
+}
+
+.aplayer-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 </style>

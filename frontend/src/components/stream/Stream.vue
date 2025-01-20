@@ -1,7 +1,7 @@
 <template>
   <div id="stream" class="col-sm-12 col-md-10 col-lg-8 mx-auto scroll-container" @scroll="handleScroll">
     <div v-if="contents.length">
-      <div v-for="content in contents" :key="content.name" class="card d-flex flex-row">
+      <div v-for="content in contents" :key="content.name" class="card d-flex flex-row" @click="playContent(content)">
         <div class="card-img-left-wrapper">
           <img :src="content.thumbNail" class="card-img-left" alt="..." />
         </div>
@@ -20,6 +20,8 @@
 
 <script>
 import ContentAPI from '@/components/utils/Content'
+import 'APlayer/dist/APlayer.min.css'
+import APlayer from 'APlayer/dist/APlayer.min.js'
 
 export default {
   name: 'Sidebar',
@@ -59,6 +61,18 @@ export default {
       if (bottom) {
         this.updateContents()
       }
+    },
+    playContent (content) {
+      const ap = new APlayer({
+        container: document.getElementById('aplayer'),
+        audio: {
+          name: content.name,
+          artist: content.channelName,
+          url: `http://localhost:8080/buzz/content/stream/` + content.credit,
+          cover: content.thumbNail
+        }
+      })
+      ap.play()
     }
   },
   mounted () {
@@ -104,7 +118,7 @@ export default {
 }
 
 .scroll-container {
-  height: calc(100vh - 60px); /* Adjust based on header height */
+  height: calc(100vh - 60px); /* Adjust based on header and bottom height */
   overflow-y: auto;
 }
 
