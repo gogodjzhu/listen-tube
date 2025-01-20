@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import Request from '@/components/utils/Request'
+import Auth from '@/components/utils/Auth'
 
 export default {
   name: 'Login',
@@ -43,16 +43,8 @@ export default {
   },
   methods: {
     handleLogin () {
-      return Request({
-        url: '/auth/login',
-        method: 'post',
-        data: {
-          username: this.username,
-          password: this.password
-        }
-      })
-        .then(response => {
-          localStorage.setItem('token', response.token)
+      Auth.login(this.username, this.password)
+        .then(() => {
           this.updateCurrentUser()
         })
         .catch(error => {
@@ -65,29 +57,28 @@ export default {
         })
     },
     handleLogout () {
-      this.currentUser = null
-      localStorage.removeItem('token')
+      Auth.logout()
+      this.updateCurrentUser()
     },
     getCurrentUser () {
       return this.currentUser
     },
+    // exange token for user info
     updateCurrentUser () {
       if (localStorage.getItem('token') == null) {
+        this.currentUser = null
         return
       }
-      return Request({
-        url: '/auth/current_user',
-        method: 'get'
-      })
+      Auth.currentUser()
         .then(response => {
           this.currentUser = {
             username: response.UserName,
             userCredit: response.UserCredit
           }
-          return this.currentUser
         })
         .catch(error => {
           alert('Get current user failed: ' + error.message)
+          this.currentUser = null
         })
     }
   },
