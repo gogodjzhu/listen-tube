@@ -1,6 +1,6 @@
 <template>
-  <div id="stream" class="col-sm-12 col-md-10 col-lg-8 mx-auto">
-    <div v-if="contents">
+  <div id="stream" class="col-sm-12 col-md-10 col-lg-8 mx-auto scroll-container" @scroll="handleScroll">
+    <div v-if="contents.length">
       <div v-for="content in contents" :key="content.name" class="card d-flex flex-row">
         <div class="card-img-left-wrapper">
           <img :src="content.thumbNail" class="card-img-left" alt="..." />
@@ -10,6 +10,9 @@
           <p class="text-truncate">{{ content.channelName }}</p>
           <p class="text-truncate">{{ content.length }} · {{ content.publishedTime }}</p>
         </div>
+      </div>
+      <div v-if="noMoreContents" class="no-more-contents">
+        No more contents to load.
       </div>
     </div>
   </div>
@@ -25,18 +28,37 @@ export default {
   },
   data () {
     return {
-      contents: null
+      contents: [],
+      pageIndex: 1,
+      pageSize: 10,
+      loading: false,
+      noMoreContents: false
     }
   },
   methods: {
     updateContents () {
-      ContentAPI.listContents(1, 10)
-        .then(contents => {
-          this.contents = contents
+      if (this.loading || this.noMoreContents) return
+      this.loading = true
+      ContentAPI.listContents(this.pageIndex, this.pageSize)
+        .then(newContents => {
+          if (newContents.length === 0) {
+            this.noMoreContents = true
+          } else {
+            this.contents = [...this.contents, ...newContents]
+            this.pageIndex++
+          }
+          this.loading = false
         })
         .catch(error => {
           alert('Internal error: ' + error)
+          this.loading = false
         })
+    },
+    handleScroll (event) {
+      const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight
+      if (bottom) {
+        this.updateContents()
+      }
     }
   },
   mounted () {
@@ -79,5 +101,16 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.scroll-container {
+  height: calc(100vh - 60px); /* Adjust based on header height */
+  overflow-y: auto;
+}
+
+.no-more-contents {
+  text-align: center;
+  padding: 1rem;
+  color: #888;
 }
 </style>
