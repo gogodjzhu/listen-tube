@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        "**/__debug.*": true
+    },
+    "remote.localPortHost": "allInterfaces",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false
+}
