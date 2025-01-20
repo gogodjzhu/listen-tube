@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import request from '@/components/utils/request'
+import Request from '@/components/utils/Request'
 
 export default {
   name: 'Login',
@@ -43,7 +43,7 @@ export default {
   },
   methods: {
     handleLogin () {
-      return request({
+      return Request({
         url: '/auth/login',
         method: 'post',
         data: {
@@ -75,7 +75,7 @@ export default {
       if (localStorage.getItem('token') == null) {
         return
       }
-      return request({
+      return Request({
         url: '/auth/current_user',
         method: 'get'
       })
