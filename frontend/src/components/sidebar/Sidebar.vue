@@ -1,36 +1,65 @@
 <template>
   <div>
-    <h1>Sidebar</h1>
-    <!-- a button to invoke updateSubscription -->
-    <button @click="updateSubscription">Update Subscription</button>
+    <div class="subscription-title">Subscription</div>
+    <ul v-if="subscriptions" class="p-1">
+      <li v-for="subscription in subscriptions" :key="subscription.channelName" class="subscription-item">
+        <img :src="subscription.channelThumbnail" alt="thumbnail" class="thumbnail">
+        <span>{{ subscription.channelName }}</span>
+      </li>
+    </ul>
+    <div v-else>
+      Loading subscriptions...
+    </div>
   </div>
 </template>
 
 <script>
-// import Request from '@/components/utils/Request'
-import Auth from '@/components/utils/Auth'
+import Subscribe from '@/components/utils/Subscribe'
 
 export default {
   name: 'Sidebar',
   components: {
-    Auth
+    Subscribe
   },
   data () {
     return {
-      currentUser: null
+      subscriptions: null
     }
   },
   methods: {
     updateSubscription () {
-      const currentUser = Auth.currentUser()
-      console.log('Current user:', currentUser)
+      Subscribe.listSubscriptions()
+        .then(subscriptions => {
+          this.subscriptions = subscriptions
+        })
+        .catch(error => {
+          alert('Internal error: ' + error)
+        })
     }
+  },
+  mounted () {
+    this.updateSubscription()
   }
-  // mounted () {
-  //   this.updateSubscription()
-  // }
 }
 </script>
 
 <style scoped>
+.subscription-title {
+  text-align: left;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+.subscription-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.thumbnail {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
 </style>
