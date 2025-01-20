@@ -12,9 +12,31 @@ class Subscription {
 
 class Subscribe {
   static async subscribe (channelId) {
+    try {
+      return await Request.post('/buzz/subscription/add', { channel_id: channelId })
+        .then(response => {
+          if (response.code !== 0) {
+            throw new Error('subscribe failed: ' + response.message)
+          }
+          return true
+        })
+    } catch (error) {
+      throw new Error('subscribe failed: ' + error.message)
+    }
   }
 
   static async unsubscribe (channelId) {
+    try {
+      return await Request.post('/buzz/subscription/delete', { channel_id: channelId })
+        .then(response => {
+          if (response.code !== 0) {
+            throw new Error('unsubscribe failed: ' + response.message)
+          }
+          return true
+        })
+    } catch (error) {
+      throw new Error('unsubscribe failed: ' + error.message)
+    }
   }
 
   static async listSubscriptions () {

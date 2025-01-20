@@ -1,8 +1,7 @@
 <template>
-  <div class="bg-light py-2 px-3 w-100">
-
+  <div>
     <!-- header -->
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="bg-light py-2 px-3 w-100 d-flex justify-content-between align-items-center">
       <div class="d-flex w-50">
         <!-- sidebar toggle -->
         <button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample">
@@ -17,6 +16,9 @@
       <Login ref="Login" />
     </div>
 
+    <!-- stream -->
+    <Stream />
+
     <!-- sidebar offcanvas -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
       <div class="offcanvas-body">
@@ -29,12 +31,14 @@
 <script>
 import Login from '@/components/login/Login.vue'
 import Sidebar from '@/components/sidebar/Sidebar.vue'
+import Stream from '@/components/stream/Stream.vue'
 
 export default {
   name: 'Home',
   components: {
     Login,
-    Sidebar
+    Sidebar,
+    Stream
   },
   data () {
     return {

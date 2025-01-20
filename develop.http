@@ -77,14 +77,10 @@ Content-Type: application/json
 }
 
 ### /buzz/content/list
-POST http://localhost:8080/buzz/content/list
+GET http://localhost:8080/buzz/content/list?page_index=1&page_size=2
 Authorization: {{jwt_cookie}}
 Content-Type: application/json
 
-{
-  "PageIndex": 1,
-  "PageSize": 2
-}
 ### `/buzz/content/list` return content list:
 # {
 #   "contents": [

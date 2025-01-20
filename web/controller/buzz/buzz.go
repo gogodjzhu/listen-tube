@@ -56,9 +56,9 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 		ctx.JSON(http.StatusOK, result)
 	})
 
-	r.POST("/content/list", func(ctx *gin.Context) {
+	r.GET("/content/list", func(ctx *gin.Context) {
 		var req ListContentRequest
-		if err := ctx.ShouldBindJSON(&req); err != nil {
+		if err := ctx.ShouldBindQuery(&req); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
