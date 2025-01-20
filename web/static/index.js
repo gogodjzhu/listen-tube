@@ -7,9 +7,8 @@ $(document).ready(function () {
 
     function fetchData(page) {
         return $.ajax({
-            url: '/buzz/content/list',
-            method: 'POST',
-            data: JSON.stringify({ PageIndex: page, PageSize: itemsPerPage }),
+            url: '/buzz/content/list?page_index=' + page + '&page_size=' + itemsPerPage,
+            method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + getToken(),
                 'Content-Type': 'application/json'
