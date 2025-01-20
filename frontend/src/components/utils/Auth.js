@@ -18,9 +18,6 @@ class Auth {
     try {
       return await Request.post('/auth/register', { username, password })
         .then(response => {
-          if (response.status !== 200) {
-            return false
-          }
           return true
         })
     } catch (error) {
