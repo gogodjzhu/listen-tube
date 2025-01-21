@@ -20,6 +20,8 @@
 
 <script>
 import ContentAPI from '@/components/utils/Content'
+import 'aplayer/dist/APlayer.min.css'
+import APlayer from 'aplayer'
 
 export default {
   name: 'Sidebar',
@@ -66,7 +68,7 @@ export default {
         audio: {
           name: content.name,
           artist: content.channelName,
-          url: `http://localhost:8080/buzz/content/stream/` + content.credit,
+          url: `http://172.17.0.2:8080/openapi/content/stream/` + content.credit,
           cover: content.thumbNail
         }
       })

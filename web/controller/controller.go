@@ -85,6 +85,10 @@ func (c *Controller) Start() error {
 	if err != nil {
 		return err
 	}
+	openApiController, err := buzz.NewOpenAPIController(c.subcribeService)
+	if err != nil {
+		return err
+	}
 	jwtMiddleware, err := jwt.NewJWTMiddleware(c.authService)
 	if err != nil {
 		return err
@@ -105,6 +109,8 @@ func (c *Controller) Start() error {
 	{
 		buzzController.AddHandler(buzzGroup)
 	}
+	openapiGroup := c.Router.Group("/openapi")
+	openApiController.AddHandler(openapiGroup)
 
 	return c.Router.Run(fmt.Sprintf("0.0.0.0:%d", c.Conf.Port)) // listen and serve on 0.0.0.0:8080
 }
