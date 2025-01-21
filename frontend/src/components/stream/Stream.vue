@@ -20,8 +20,6 @@
 
 <script>
 import ContentAPI from '@/components/utils/Content'
-import 'APlayer/dist/APlayer.min.css'
-import APlayer from 'APlayer/dist/APlayer.min.js'
 
 export default {
   name: 'Sidebar',
