@@ -1,6 +1,6 @@
 <template>
-  <div id="stream" class="col-sm-12 col-md-10 col-lg-8 mx-auto scroll-container" @scroll="handleScroll">
-    <div v-if="contents.length">
+  <div id="stream" class="scroll-container" @scroll="handleScroll">
+    <div v-if="contents.length" class="col-sm-12 col-md-10 col-lg-8 mx-auto">
       <div v-for="content in contents" :key="content.name" class="card d-flex flex-row" @click="playContent(content)">
         <div class="card-img-left-wrapper">
           <img :src="content.thumbNail" class="card-img-left" alt="..." />
