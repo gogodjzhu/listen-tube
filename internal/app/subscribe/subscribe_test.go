@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
@@ -94,7 +95,7 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 		Title:         "Test Content",
 		Thumbnail:     "http://example.com/thumbnail.jpg",
 		ContentCredit: "dQw4w9WgXcQ",
-		State:         dao.ContentStatePrepared,
+		State:         dao.ContentStateDownloaded,
 		CreateAt:      fixedTime,
 		UpdateAt:      fixedTime,
 	}
@@ -114,10 +115,11 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 }
 
 func MockSubscribeService() *SubscribeService {
-	conf := &db.Config{
+	c := &conf.DBConfig{
 		DSN: fmt.Sprintf("/tmp/listen-tube-unit-test-%d.db", time.Now().UnixNano()),
+		Driver: conf.SQLiteDriver,
 	}
-	ds, err := db.NewDatabaseSource(conf)
+	ds, err := db.NewDatabaseSource(c)
 	if err != nil {
 		panic(err)
 	}
@@ -127,7 +129,7 @@ func MockSubscribeService() *SubscribeService {
 		panic(err)
 	}
 
-	downloaderConfig := &downloader.Config{
+	downloaderConfig := &conf.DownloaderConfig{
 		BinUri:   "/tmp/listen-tube/.bin/yt-dlp",
 		BinURL:   "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
 		BasePath: "/tmp/listen-tube/",
@@ -381,7 +383,7 @@ func TestSubscribeService_ListContent(t *testing.T) {
 					Title:         "Test Content",
 					Thumbnail:     "http://example.com/thumbnail.jpg",
 					ContentCredit: "dQw4w9WgXcQ",
-					State:         dao.ContentStatePrepared,
+					State:         dao.ContentStateDownloaded,
 					CreateAt:      fixedTime,
 					UpdateAt:      fixedTime,
 				},

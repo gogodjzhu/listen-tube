@@ -5,6 +5,7 @@ go 1.23
 require (
 	github.com/appleboy/gin-jwt/v2 v2.10.0
 	github.com/gin-gonic/gin v1.10.0
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tidwall/gjson v1.18.0
 	gorm.io/driver/sqlite v1.5.6
@@ -12,9 +13,12 @@ require (
 )
 
 require (
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/lestrrat-go/strftime v1.1.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 )
 
@@ -51,4 +55,5 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/driver/mysql v1.5.7
 )

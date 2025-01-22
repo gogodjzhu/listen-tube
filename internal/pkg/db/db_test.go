@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"gorm.io/gorm/schema"
 )
 
@@ -80,8 +81,9 @@ func setupTest(t *testing.T, mapper *TestTableMapper) func(t *testing.T) {
 }
 
 func MockTestTableMapper() *TestTableMapper {
-	conf := &Config{
+	conf := &conf.DBConfig{
 		DSN: fmt.Sprintf("/tmp/listen-tube-unit-test-%d.db", time.Now().UnixNano()),
+		Driver: conf.SQLiteDriver,
 	}
 	ds, err := NewDatabaseSource(conf)
 	if err != nil {
@@ -295,8 +297,9 @@ func TestNewBasicMapper(t *testing.T) {
 		want    *BasicMapper[T]
 		wantErr bool
 	}
-	ds, err := NewDatabaseSource(&Config{
-		"/tmp/listen-tube-unit-test.db",
+	ds, err := NewDatabaseSource(&conf.DBConfig{
+		DSN:    "/tmp/listen-tube-unit-test.db",
+		Driver: conf.SQLiteDriver,
 	})
 	if err != nil {
 		t.Fatalf("NewDatabaseSource() failed, err:%v", err)

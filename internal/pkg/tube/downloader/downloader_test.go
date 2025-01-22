@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 	"testing"
+
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 )
 
 func TestDownloader_Download(t *testing.T) {
@@ -43,14 +45,14 @@ func TestDownloader_Download(t *testing.T) {
 				Err:        nil,
 				Progress:   100,
 				ContentURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				Output:     "/tmp/listen-tube/dQw4w9WgXcQ/test_content.mp4",
+				Output:     "/tmp/listen-tube/dQw4w9WgXcQ/worstaudio.mp4",
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDownloader(&Config{
+			d, err := NewDownloader(&conf.DownloaderConfig{
 				BinUri:   tt.fields.binUri,
 				BinURL:   tt.fields.binURL,
 				BasePath: tt.fields.basePath,

@@ -5,32 +5,27 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/auth"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
 	"github.com/gogodjzhu/listen-tube/web/controller/buzz"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
-	"github.com/gin-contrib/cors"
 )
 
 type Controller struct {
 	Router          *gin.Engine
-	Conf            *Config
+	Conf            *conf.Config
 	subcribeService *subscribe.SubscribeService
 	authService     *auth.AuthService
 }
 
-type Config struct {
-	Port             int
-	DBConfig         *db.Config
-	DownloaderConfig *downloader.Config
-}
-
-func NewController(ctx context.Context, conf *Config) (*Controller, error) {
+func NewController(ctx context.Context, conf *conf.Config) (*Controller, error) {
 	r := gin.Default()
 	// TODO: only allow specific origin
 	config := cors.DefaultConfig()
@@ -112,5 +107,5 @@ func (c *Controller) Start() error {
 	openapiGroup := c.Router.Group("/openapi")
 	openApiController.AddHandler(openapiGroup)
 
-	return c.Router.Run(fmt.Sprintf("0.0.0.0:%d", c.Conf.Port)) // listen and serve on 0.0.0.0:8080
+	return c.Router.Run(fmt.Sprintf("0.0.0.0:%d", c.Conf.WebConfig.Port)) // listen and serve on 0.0.0.0:8080
 }

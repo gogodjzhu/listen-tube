@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 )
@@ -50,10 +51,11 @@ func setupTest(t *testing.T, s *AuthService) func(t *testing.T) {
 }
 
 func MockAuthService() *AuthService {
-	conf := &db.Config{
+	c := &conf.DBConfig{
 		DSN: fmt.Sprintf("/tmp/listen-tube-unit-test-%d.db", time.Now().UnixNano()),
+		Driver: conf.SQLiteDriver,
 	}
-	ds, err := db.NewDatabaseSource(conf)
+	ds, err := db.NewDatabaseSource(c)
 	if err != nil {
 		panic(err)
 	}

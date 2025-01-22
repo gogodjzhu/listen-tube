@@ -2,6 +2,13 @@ package db
 
 import "C"
 import (
+	"errors"
+	"os"
+	"path/filepath"
+
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	logger "gorm.io/gorm/logger"
@@ -12,10 +19,6 @@ type DatabaseSource struct {
 	DB *gorm.DB
 }
 
-type Config struct {
-	DSN string
-}
-
 type Pagenation struct {
 	PageIndex int
 	PageSize  int
@@ -23,13 +26,39 @@ type Pagenation struct {
 	Order     string
 }
 
-func NewDatabaseSource(conf *Config) (*DatabaseSource, error) {
-	db, err := gorm.Open(sqlite.Open(conf.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+func NewDatabaseSource(c *conf.DBConfig) (*DatabaseSource, error) {
+	var db *gorm.DB
+	var err error
+
+	switch c.Driver {
+	case conf.MySQLDriver:
+		db, err = gorm.Open(mysql.Open(c.DSN), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	case conf.SQLiteDriver:
+		if _, err := os.Stat(c.DSN); os.IsNotExist(err) {
+			err = os.MkdirAll(filepath.Dir(c.DSN), os.ModePerm)
+			if err != nil {
+				return nil, err
+			}
+			file, err := os.Create(c.DSN)
+			if err != nil {
+				return nil, err
+			}
+			file.Close()
+			log.Infof("Created sqlite db file: %s", c.DSN)
+		}
+		db, err = gorm.Open(sqlite.Open(c.DSN), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	default:
+		return nil, errors.New("unsupported database driver")
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	dm := &DatabaseSource{
 		DB: db,
 	}

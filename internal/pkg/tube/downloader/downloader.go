@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/errors"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/ioutil"
 	log "github.com/sirupsen/logrus"
@@ -43,7 +44,7 @@ func (opt *DownloadOption) Validate() error {
 }
 
 // NewDownloader creates a new Downloader instance and ensures the necessary binaries and directories are set up.
-func NewDownloader(conf *Config) (*Downloader, error) {
+func NewDownloader(conf *conf.DownloaderConfig) (*Downloader, error) {
 	// download the youtube-dl binary if not exists
 	if _, err := os.Stat(conf.BinUri); err != nil {
 		if !os.IsNotExist(err) {
