@@ -1,5 +1,10 @@
 package conf
 
+import (
+	"io/ioutil"
+	"gopkg.in/yaml.v2"
+)
+
 type Config struct {
 	WebConfig        *WebConfig        `yaml:"web"`
 	DBConfig         *DBConfig         `yaml:"db"`
@@ -27,4 +32,19 @@ type DownloaderConfig struct {
 	BinUri   string `yaml:"bin_uri"`
 	BinURL   string `yaml:"bin_url"`
 	BasePath string `yaml:"base_path"`
+}
+
+func ReadConfig(path string) (*Config, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
