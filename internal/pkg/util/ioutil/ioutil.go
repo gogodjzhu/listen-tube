@@ -1,6 +1,7 @@
 package ioutil
 
 import (
+	"crypto/tls"
 	"io"
 	"net/http"
 	"os"
@@ -16,8 +17,14 @@ func (cw ChanWriter) Write(p []byte) (n int, err error) {
 }
 
 func DownloadFile(url string, output string) error {
+    // create a custom HTTP client with TLS verification disabled
+    tr := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+    }
+    client := &http.Client{Transport: tr}
+
     // download the file
-    resp, err := http.Get(url)
+    resp, err := client.Get(url)
     if err != nil {
         return err
     }
