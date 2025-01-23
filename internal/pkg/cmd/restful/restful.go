@@ -2,6 +2,7 @@ package restful
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gogodjzhu/listen-tube/internal/pkg/cmd"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
@@ -19,8 +20,13 @@ func NewCmdRestful(f *cmd.Factory) *cobra.Command {
 				fmt.Fprintln(f.IOStreams.Out, "[Err] config path is required")
 				return
 			}
-			fmt.Fprintln(f.IOStreams.Out, "[Info] restful start with config path", configPath)
-			config, err := conf.ReadConfig(configPath)
+			configContent, err := os.ReadFile(configPath)
+			if err != nil {
+				fmt.Fprintln(f.IOStreams.Out, "[Err] read config failed", err)
+				return
+			}
+			fmt.Fprintln(f.IOStreams.Out, "[Info] restful start with config path: ", configPath + ", content:\n" + string(configContent))
+			config, err := conf.ReadConfig(configContent)
 			if err != nil {
 				fmt.Fprintln(f.IOStreams.Out, "[Err] read config failed", err)
 				return

@@ -2,7 +2,6 @@ package conf
 
 import (
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 type Config struct {
@@ -35,14 +34,9 @@ type DownloaderConfig struct {
 	BasePath string `yaml:"base_path"`
 }
 
-func ReadConfig(path string) (*Config, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
+func ReadConfig(content []byte) (*Config, error) {
 	var config Config
-	err = yaml.Unmarshal(data, &config)
+	err := yaml.Unmarshal(content, &config)
 	if err != nil {
 		return nil, err
 	}
