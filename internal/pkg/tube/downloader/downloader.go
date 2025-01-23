@@ -139,8 +139,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 	cmd.Stderr = messageChan
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("failed to download content: %v", err)
-		result.Err = errors.ErrFailedOS
+		return nil, err
 	}
 	result.Finished = true
 	return result, nil

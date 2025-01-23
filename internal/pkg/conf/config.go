@@ -1,8 +1,8 @@
 package conf
 
 import (
-	"io/ioutil"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
 type Config struct {
@@ -29,6 +29,7 @@ const (
 )
 
 type DownloaderConfig struct {
+	Enable   bool   `yaml:"enable"`
 	BinUri   string `yaml:"bin_uri"`
 	BinURL   string `yaml:"bin_url"`
 	BasePath string `yaml:"base_path"`
