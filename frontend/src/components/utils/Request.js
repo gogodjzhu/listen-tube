@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const server = axios.create({
-  baseURL: 'http://172.17.0.2:8080/',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 3000
 })
 

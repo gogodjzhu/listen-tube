@@ -24,7 +24,7 @@ import 'aplayer/dist/APlayer.min.css'
 import APlayer from 'aplayer'
 
 export default {
-  name: 'Sidebar',
+  name: 'Stream',
   components: {
     ContentAPI
   },
@@ -68,7 +68,7 @@ export default {
         audio: {
           name: content.name,
           artist: content.channelName,
-          url: `http://172.17.0.2:8080/openapi/content/stream/` + content.credit,
+          url: `${import.meta.env.VITE_API_BASE_URL}/openapi/content/stream/` + content.credit,
           cover: content.thumbNail
         }
       })
