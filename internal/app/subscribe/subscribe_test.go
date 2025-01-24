@@ -89,7 +89,7 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 		t.Fatalf("Failed to insert subscription: %v", err)
 	}
 
-	content := &dao.Content{
+	content1 := &dao.Content{
 		Platform:      "YouTube",
 		ChannelCredit: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
 		Title:         "Test Content",
@@ -99,7 +99,22 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 		CreateAt:      fixedTime,
 		UpdateAt:      fixedTime,
 	}
-	_, err = s.contentMapper.Insert(content)
+	_, err = s.contentMapper.Insert(content1)
+	if err != nil {
+		t.Fatalf("Failed to insert content: %v", err)
+	}
+
+	content2 := &dao.Content{
+		Platform:      "YouTube",
+		ChannelCredit: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+		Title:         "Test Content",
+		Thumbnail:     "http://example.com/thumbnail.jpg",
+		ContentCredit: "any",
+		State:         dao.ContentStatePrepared,
+		CreateAt:      fixedTime,
+		UpdateAt:      fixedTime,
+	}
+	_, err = s.contentMapper.Insert(content2)
 	if err != nil {
 		t.Fatalf("Failed to insert content: %v", err)
 	}
@@ -110,7 +125,7 @@ func setupTest(t *testing.T, s *SubscribeService) func(t *testing.T) {
 		s.userMapper.DB.Exec("DELETE FROM " + user1.TableName())
 		s.channelMapper.DB.Exec("DELETE FROM " + channel.TableName())
 		s.subscriptionMapper.DB.Exec("DELETE FROM " + subscription.TableName())
-		s.contentMapper.DB.Exec("DELETE FROM " + content.TableName())
+		s.contentMapper.DB.Exec("DELETE FROM " + content1.TableName())
 	}
 }
 
@@ -130,18 +145,20 @@ func MockSubscribeService() *SubscribeService {
 	}
 
 	downloaderConfig := &conf.DownloaderConfig{
-		BinUri:   "/tmp/listen-tube/.bin/yt-dlp",
-		BinURL:   "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
-		BasePath: "/tmp/listen-tube/",
+		Enable:  true,
+		YtDlpLink:   "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+		BasePath: "/tmp/listen-tube-test/",
+		DownloadIntervalSeconds: 0,
 	}
-	downloaderInstance, err := downloader.NewDownloader(downloaderConfig)
-	if err != nil {
-		panic(err)
+	fetcherConfig := &conf.FetcherConfig{
+		Enable: true,
+		FetcheIntervalSeconds: 0,
 	}
 
-	fetcherInstance := fetcher.NewFetcher(fetcher.Config{})
-
-	subscribeService, err := NewSubscribeService(unionMapper, downloaderInstance, fetcherInstance)
+	subscribeService, err := NewSubscribeService(unionMapper, &conf.SubscriberConfig{
+		DownloaderConfig: downloaderConfig,
+		FetcherConfig: 	fetcherConfig,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -299,63 +316,6 @@ func TestSubscribeService_ListSubscription(t *testing.T) {
 	}
 }
 
-func TestSubscribeService_FetchContent(t *testing.T) {
-	teardownSuite := setupSuite(t)
-	defer teardownSuite(t)
-
-	tests := []struct {
-		name    string
-		wantMin int
-		wantErr bool
-	}{
-		{
-			name:    "Fetch content",
-			wantMin: 1, // Adjust this based on expected minimum fetch count
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := MockSubscribeService()
-			teardownTest := setupTest(t, s)
-			defer teardownTest(t)
-
-			got, err := s.FetchContent()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SubscribeService.FetchContent() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got <= tt.wantMin {
-				t.Errorf("SubscribeService.FetchContent() = %v, want > %v", got, tt.wantMin)
-			}
-		})
-	}
-}
-
-func TestSubscribeService_DownloadContent(t *testing.T) {
-	teardownSuite := setupSuite(t)
-	defer teardownSuite(t)
-
-	tests := []struct {
-		name string
-	}{
-		{
-			name: "Download content",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := MockSubscribeService()
-			teardownTest := setupTest(t, s)
-			defer teardownTest(t)
-
-			s.DownloadContent()
-		})
-	}
-}
-
 func TestSubscribeService_ListContent(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite(t)
@@ -420,20 +380,105 @@ func TestSubscribeService_ListContent(t *testing.T) {
 	}
 }
 
-	func TestConstant_list(t *testing.T) {
-		if dao.ContentStateFailed != -1 {
-			t.Errorf("ContentStateFailed = %v, want -1", dao.ContentStateFailed)
-		}
-		if dao.ContentStateInited != 0 {
-			t.Errorf("ContentStateInited = %v, want 0", dao.ContentStateInited)
-		}
-		if dao.ContentStatePrepared != 1 {
-			t.Errorf("ContentStatePrepared = %v, want 1", dao.ContentStatePrepared)
-		}
-		if dao.ContentStateDownloading != 2 {
-			t.Errorf("ContentStateDownloading = %v, want 2", dao.ContentStateDownloading)
-		}
-		if dao.ContentStateDownloaded != 3 {
-			t.Errorf("ContentStateDownloaded = %v, want 3", dao.ContentStateDownloaded)
-		}
+func TestSubscribeService_takeNextDownload(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	s := MockSubscribeService()
+	teardownTest := setupTest(t, s)
+	defer teardownTest(t)
+
+	content := s.takeNextDownload()
+	if content == nil {
+		t.Errorf("SubscribeService.takeNextDownload() = nil, want non-nil")
 	}
+}
+
+func TestSubscribeService_updateDownloadResult(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	s := MockSubscribeService()
+	teardownTest := setupTest(t, s)
+	defer teardownTest(t)
+
+	content := s.takeNextDownload()
+	result := &downloader.Result{
+		Finished: true,
+		Output:   "/path/to/downloaded/file",
+		Err:      nil,
+	}
+	s.updateDownloadResult(*content, result)
+
+	updatedContent, err := s.contentMapper.Select(&dao.Content{ID: content.ID})
+	if err != nil || len(updatedContent) == 0 {
+		t.Fatalf("Failed to update content: %v", err)
+	}
+	if updatedContent[0].State != dao.ContentStateDownloaded {
+		t.Errorf("Content state = %v, want %v", updatedContent[0].State, dao.ContentStateDownloaded)
+	}
+}
+
+func TestSubscribeService_takeNextFetcher(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	s := MockSubscribeService()
+	teardownTest := setupTest(t, s)
+	defer teardownTest(t)
+
+	channel := s.takeNextFetcher()
+	if channel == nil {
+		t.Errorf("SubscribeService.takeNextFetcher() = nil, want non-nil")
+	}
+}
+
+func TestSubscribeService_updateFetchResult(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite(t)
+
+	s := MockSubscribeService()
+	teardownTest := setupTest(t, s)
+	defer teardownTest(t)
+
+	channel := s.takeNextFetcher()
+	result := &fetcher.Result{
+		Contents: []fetcher.Content{
+			{
+				Title:         "New Content",
+				Thumbnail:     "http://example.com/new_thumbnail.jpg",
+				Credit:        "newContentCredit",
+				PublishedTime: time.Now(),
+				Length:        300,
+				MembersOnly:   false,
+			},
+		},
+	}
+	s.updateFetchResult(channel, result)
+
+	newContent, err := s.contentMapper.Select(&dao.Content{ContentCredit: "newContentCredit"})
+	if err != nil || len(newContent) == 0 {
+		t.Fatalf("Failed to insert new content: %v", err)
+	}
+	if newContent[0].Title != "New Content" {
+		t.Errorf("Content title = %v, want %v", newContent[0].Title, "New Content")
+	}
+}
+
+func TestConstant_list(t *testing.T) {
+	if dao.ContentStateFailed != -1 {
+		t.Errorf("ContentStateFailed = %v, want -1", dao.ContentStateFailed)
+	}
+	if dao.ContentStateInited != 0 {
+		t.Errorf("ContentStateInited = %v, want 0", dao.ContentStateInited)
+	}
+	if dao.ContentStatePrepared != 1 {
+		t.Errorf("ContentStatePrepared = %v, want 1", dao.ContentStatePrepared)
+	}
+	if dao.ContentStateDownloading != 2 {
+		t.Errorf("ContentStateDownloading = %v, want 2", dao.ContentStateDownloading)
+	}
+	if dao.ContentStateDownloaded != 3 {
+		t.Errorf("ContentStateDownloaded = %v, want 3", dao.ContentStateDownloaded)
+	}
+}

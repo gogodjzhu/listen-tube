@@ -1,12 +1,15 @@
 web:
   port: 8080
-  host: "0.0.0.0"
-
+  host: "localhost"
 db:
-  dsn: "/tmp/listen-tube-demo/listen-tube.db"
+  dsn: "/tmp/listen-tube-test/test.db"
   driver: "sqlite"
-
-downloader:
-  bin_uri: "/tmp/listen-tube-demo/listen-tube/.bin/yt-dlp"
-  bin_url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"
-  base_path: "/tmp/listen-tube-demo/listen-tube/"
+subscriber:
+  fetcher:
+    enable: true
+    fetch_interval_seconds: 30
+  downloader:
+    enable: true
+    base_path: "/tmp/listen-tube-test/listen-tube/"
+    yt_dlp_link: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"
+    download_interval_seconds: 120

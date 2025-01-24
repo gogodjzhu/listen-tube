@@ -1,11 +1,13 @@
 package fetcher
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/http"
 	utiltime "github.com/gogodjzhu/listen-tube/internal/pkg/util/time"
@@ -15,14 +17,44 @@ import (
 
 type Fetcher struct {
 	proxies []string
+	conf 	*conf.FetcherConfig
 }
 
-type Config struct {
-	Proxies []string
+func NewFetcher(config *conf.FetcherConfig) *Fetcher {
+	var proxies []string
+	if config.ProxyConfig != nil {
+		proxies = config.ProxyConfig.Proxies
+	}
+	return &Fetcher{
+		proxies: proxies,
+		conf:    config,
+	}
 }
 
-func NewFetcher(config Config) *Fetcher {
-	return &Fetcher{proxies: config.Proxies}
+func (cf *Fetcher) TryStart(ctx context.Context, next func() *dao.Channel, update func(*dao.Channel, *Result)) {
+	if !cf.conf.Enable {
+		log.Info("fetcher disabled")
+		return
+	}
+	// periodically (from d.conf.DownloadIntervalSeconds) fetch the content
+	timer := time.NewTicker(time.Duration(cf.conf.FetcheIntervalSeconds) * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("fetcher stopped")
+			return
+		case <-timer.C:
+			channel := next()
+			if channel == nil {
+				continue
+			}
+			result, err := cf.Fetch(FetchOption{
+				ChannelCredit: channel.ChannelCredit,
+			})
+			result.Err = err
+			update(channel, result)
+		}
+	}
 }
 
 // ParseChannelCredit parse channel credit from channel credit string

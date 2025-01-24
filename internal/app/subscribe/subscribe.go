@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
@@ -29,7 +30,15 @@ type SubscribeService struct {
 	fetcher            *fetcher.Fetcher
 }
 
-func NewSubscribeService(mapper *dao.UnionMapper, downloader *downloader.Downloader, fetcher *fetcher.Fetcher) (*SubscribeService, error) {
+func NewSubscribeService(mapper *dao.UnionMapper, config *conf.SubscriberConfig) (*SubscribeService, error) {
+	downloader, err := downloader.NewDownloader(config.DownloaderConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create downloader")
+	}
+	fetcher := fetcher.NewFetcher(config.FetcherConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create fetcher")
+	}
 	ss := &SubscribeService{
 		subscriptionMapper: mapper.SubscriptionMapper,
 		userMapper:         mapper.UserMapper,
@@ -44,69 +53,106 @@ func NewSubscribeService(mapper *dao.UnionMapper, downloader *downloader.Downloa
 
 // Start the background tasks to fetch and download content periodically
 func (s *SubscribeService) Start(ctx context.Context) error {
-	// Schedule to execute `FetchContent` and `DownloadContent` periodically in the background
-	go s.scheduleFetchContent(ctx)
-	go s.scheduleDownloadContent(ctx)
+	go s.fetcher.TryStart(ctx, s.takeNextFetcher, s.updateFetchResult)
+	go s.downloader.TryStart(ctx, s.takeNextDownload, s.updateDownloadResult)
 	return nil
 }
 
-func (s *SubscribeService) scheduleFetchContent(ctx context.Context) {
-	// Execute FetchContent immediately
-	log.Info("Starting initial FetchContent task")
-	fetchCount, err := s.FetchContent()
+// TODO: test this method
+func (s *SubscribeService) takeNextDownload() *dao.Content {
+	sql := "SELECT * FROM t_content WHERE state = ? ORDER BY published_time DESC LIMIT 1"
+	contents, err := s.contentMapper.SelectBySQL(sql, dao.ContentStatePrepared)
 	if err != nil {
-		log.Errorf("Error during initial FetchContent task: %v", err)
-	} else {
-		log.Infof("Initial FetchContent task completed, fetched %d contents", fetchCount)
+		log.Errorf("failed to list content: %v", err)
+		return nil
 	}
+	if len(contents) == 0 {
+		log.Warn("no content to download...")
+		return nil
+	}
+	return contents[0]
+}
 
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			log.Info("Stopping scheduled FetchContent task")
-			return
-		case <-ticker.C:
-			log.Info("Starting scheduled FetchContent task")
-			fetchCount, err := s.FetchContent()
-			if err != nil {
-				log.Errorf("Error during scheduled FetchContent task: %v", err)
-			} else {
-				log.Infof("Scheduled FetchContent task completed, fetched %d contents", fetchCount)
-			}
-		}
+// TODO: test this method
+func (s *SubscribeService) updateDownloadResult(c dao.Content, r *downloader.Result) {
+	if r.Err != nil {
+		log.Errorf("updateDownloadResult failed, content %s, err:%v", c.ContentCredit, r.Err)
+		return
+	}
+	state := dao.ContentStateDownloaded
+	info := "finished"
+	if !r.Finished {
+		state = dao.ContentStateFailed
+		info = r.Err.Error()
+		log.Warnf("failed to download content %s, err:%v", c.ContentCredit, r.Err)
+	}
+	_, err := s.contentMapper.Update(&dao.Content{ID: c.ID}, &dao.Content{
+		State:    state,
+		Path:     r.Output,
+		Info:     info,
+		UpdateAt: time.Now(),
+	})
+	if err != nil {
+		log.Errorf("failed to update content %s, err%v", c.ContentCredit, err)
 	}
 }
 
-func (s *SubscribeService) scheduleDownloadContent(ctx context.Context) {
-	// Execute DownloadContent immediately
-	log.Info("Starting initial DownloadContent task")
-	err := s.DownloadContent()
+// TODO: test this method
+func (s *SubscribeService) takeNextFetcher() *dao.Channel {
+	sql := "SELECT * FROM t_channel ORDER BY update_at ASC LIMIT 1"
+	channels, err := s.channelMapper.SelectBySQL(sql)
 	if err != nil {
-		log.Errorf("Error during initial DownloadContent task: %v", err)
-	} else {
-		log.Info("Initial DownloadContent task completed")
+		log.Errorf("failed to list channel, err:%v", err)
+		return nil
 	}
+	if len(channels) == 0 {
+		log.Warn("no channel to fetch...")
+		return nil
+	}
+	return channels[0]
+}
 
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			log.Info("Stopping scheduled DownloadContent task")
-			return
-		case <-ticker.C:
-			log.Info("Starting scheduled DownloadContent task")
-			err := s.DownloadContent()
-			if err != nil {
-				log.Errorf("Error during scheduled DownloadContent task: %v", err)
-			} else {
-				log.Info("Scheduled DownloadContent task completed")
-			}
+// TODO: test this method
+func (s *SubscribeService) updateFetchResult(c *dao.Channel, r *fetcher.Result) {
+	if r.Err != nil {
+		log.Errorf("updateFetchResult failed, channel %s, err:%v", c.ChannelCredit, r.Err)
+		return
+	}
+	for _, content := range r.Contents {
+		state := dao.ContentStatePrepared
+		info := "prepared"
+		if content.MembersOnly {
+			state = dao.ContentStateFailed
+			info = "skip for members only"
 		}
+		newContent := &dao.Content{
+			Platform:      "YouTube",
+			ChannelCredit: c.ChannelCredit,
+			Title:         content.Title,
+			Thumbnail:     content.Thumbnail,
+			ContentCredit: content.Credit,
+			State:         state,
+			Info:          info,
+			PublishedTime: content.PublishedTime,
+			Length:        content.Length,
+			CreateAt:      time.Now(),
+			UpdateAt:      time.Now(),
+		}
+		if oldContents, err := s.contentMapper.Select(&dao.Content{ContentCredit: content.Credit}); err != nil {
+			log.Errorf("failed to list content %s, err:%v", content.Credit, err)
+			continue
+		} else if len(oldContents) > 0 {
+			log.Debugf("content %s already exists", content.Credit)
+			continue
+		}
+		if _, err := s.contentMapper.Insert(newContent); err != nil {
+			log.Errorf("failed to create content %s, err:%v", content.Credit, err)
+		}
+	}
+	if _, err := s.channelMapper.Update(&dao.Channel{ID: c.ID}, &dao.Channel{
+		UpdateAt: time.Now(),
+	}); err != nil {
+		log.Errorf("failed to update channel %s, err:%v", c.ChannelCredit, err)
 	}
 }
 
@@ -124,9 +170,12 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 		return fmt.Errorf("already subscribed to the channel")
 	}
 
-	// check if the channel exists. if not, check by `ChannelFetcher.Fetch()` and create a new channel if it exists
-	channel, err := s.channelMapper.Select(&dao.Channel{ChannelCredit: channelCredit})
-	if err != nil || len(channel) == 0 {
+	// create a new channel if not exists, and update the channel with the latest fetch result
+	existedChannel, err := s.channelMapper.Select(&dao.Channel{ChannelCredit: channelCredit})
+	if err != nil {
+		return fmt.Errorf("failed to list channel")
+	}
+	if len(existedChannel) == 0 {
 		result, err := s.fetcher.Fetch(fetcher.FetchOption{ChannelCredit: channelCredit})
 		if err != nil || len(result.Contents) == 0 {
 			return fmt.Errorf("channel does not exist")
@@ -141,45 +190,20 @@ func (s *SubscribeService) AddSubscription(userCredit, channelCredit string) err
 			CreateAt:      time.Now(),
 			UpdateAt:      time.Now(),
 		}
-		_, err = s.channelMapper.Insert(newChannel)
-		if err != nil {
+		// create a new channel
+		if _, err = s.channelMapper.Insert(newChannel); err != nil {
 			return fmt.Errorf("failed to create new channel")
 		}
-		for _, content := range result.Contents {
-			state := dao.ContentStatePrepared
-			info := "prepared"
-			if content.MembersOnly {
-				state = dao.ContentStateFailed
-				info = "skip for members only"
-			}
-			_, err := s.contentMapper.Insert(&dao.Content{
-				Platform:      string(result.Platform),
-				ChannelCredit: result.ChannelID,
-				Title:         content.Title,
-				Thumbnail:     content.Thumbnail,
-				ContentCredit: content.Credit,
-				State:         state,
-				Info:          info,
-				PublishedTime: content.PublishedTime,
-				Length:        content.Length,
-				CreateAt:      time.Now(),
-				UpdateAt:      time.Now(),
-			})
-			if err != nil {
-				return fmt.Errorf("failed to create new content")
-			}
-		}
+		// update the channel with the latest fetch result
+		s.updateFetchResult(newChannel, result)
 	}
 
-	// create a new subscription
-	subscription := &dao.Subscription{
+	if _, err = s.subscriptionMapper.Insert(&dao.Subscription{
 		UserCredit:    userCredit,
 		ChannelCredit: channelCredit,
 		CreateAt:      time.Now(),
 		UpdateAt:      time.Now(),
-	}
-	_, err = s.subscriptionMapper.Insert(subscription)
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("failed to create subscription")
 	}
 	return nil
@@ -260,101 +284,4 @@ func (s *SubscribeService) GetChannel(channelCredit string) (*dao.Channel, error
 		return nil, fmt.Errorf("channel does not exist")
 	}
 	return channels[0], nil
-}
-
-// FetchContent fetches content for all subscriptions.
-func (s *SubscribeService) FetchContent() (int, error) {
-	// list all subscriptions of all users and related channels
-	subscriptions, err := s.subscriptionMapper.Select(&dao.Subscription{})
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to list subscriptions")
-	}
-
-	fetchCount := 0
-	// loop through the channels and fetch the contents by `ChannelFetcher.Fetch()`
-	for _, subscription := range subscriptions {
-		result, err := s.fetcher.Fetch(fetcher.FetchOption{ChannelCredit: subscription.ChannelCredit})
-		if err != nil {
-			log.Errorf("failed to fetch content for channelCredit %s: %v", subscription.ChannelCredit, err)
-			continue
-		}
-
-		// save the fetched contents to the database, with the state of `ContentStateInited`
-		for _, content := range result.Contents {
-			newContent := &dao.Content{
-				Platform:      "YouTube",
-				ChannelCredit: subscription.ChannelCredit,
-				Title:         content.Title,
-				Thumbnail:     content.Thumbnail,
-				ContentCredit: content.Credit,
-				State:         dao.ContentStatePrepared,
-				Info:          "prepared",
-				PublishedTime: content.PublishedTime,
-				Length:        content.Length,
-				CreateAt:      time.Now(),
-				UpdateAt:      time.Now(),
-			}
-			oldContent, err := s.contentMapper.Select(&dao.Content{ContentCredit: content.Credit})
-			if err != nil {
-				return fetchCount, errors.Wrap(err, "failed to list content")
-			}
-			if len(oldContent) > 0 {
-				log.Debugf("content %s already exists", content.Credit)
-				continue
-			}
-			_, err = s.contentMapper.Insert(newContent)
-			if err != nil {
-				return fetchCount, errors.Wrap(err, "failed to insert content")
-			}
-			fetchCount++
-		}
-	}
-	return fetchCount, nil
-}
-
-// DownloadContent downloads content for all subscriptions.
-func (s *SubscribeService) DownloadContent() error {
-	// list all the content with the state of `ContentStateInited`
-	contents, err := s.contentMapper.Select(&dao.Content{State: dao.ContentStatePrepared})
-	if err != nil {
-		return errors.Wrap(err, "failed to list content")
-	}
-	log.Infof("going to download %d contents...", len(contents))
-
-	// loop through the content and download the content by `Downloader.Download()`, and update the state of the content to `ContentStateDownloading`
-	for _, content := range contents {
-		content.State = dao.ContentStateDownloading
-		_, err = s.contentMapper.Update(&dao.Content{ID: content.ID}, content)
-		if err != nil {
-			return errors.Wrap(err, "failed to update content state to downloading")
-		}
-
-		// download the content
-		log.Infof("downloading content %s...", content.ContentCredit)
-		result, err := s.downloader.Download(context.Background(), &downloader.DownloadOption{
-			ContentCredit: content.ContentCredit,
-			Format:        "mp3",
-			Force:         false,
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to download content")
-		}
-
-		// parse the result of the download and update the state of the content to `ContentStateDownloaded` if the download is successful
-		if result.Finished {
-			log.Infof("downloaded content %s: %s", content.ContentCredit, result.Output)
-			content.State = dao.ContentStateDownloaded
-			content.Path = result.Output
-			_, err = s.contentMapper.Update(&dao.Content{ID: content.ID}, content)
-			if err != nil {
-				return errors.Wrap(err, "failed to update content state to downloaded")
-			}
-		} else {
-			log.Errorf("failed to download content %s: %v", content.ContentCredit, result.Err)
-		}
-
-		log.Info("sleep 5 min before next download")
-		time.Sleep(5 * time.Minute)
-	}
-	return nil
 }

@@ -10,9 +10,8 @@ import (
 
 func TestDownloader_Download(t *testing.T) {
 	type fields struct {
-		binUri   string
-		binURL   string
-		basePath string
+		conf   *conf.DownloaderConfig
+		binUri string
 	}
 	type args struct {
 		ctx context.Context
@@ -28,9 +27,11 @@ func TestDownloader_Download(t *testing.T) {
 		{
 			name: "Valid download",
 			fields: fields{
-				binUri:   "/tmp/listen-tube/.bin/yt-dlp",
-				binURL:   "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
-				basePath: "/tmp/listen-tube/",
+				conf: &conf.DownloaderConfig{
+					BasePath:  "/tmp/listen-tube-test/",
+					YtDlpLink: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+				},
+				binUri: "/tmp/listen-tube-test/.bin/yt-dlp",
 			},
 			args: args{
 				ctx: context.Background(),
@@ -45,24 +46,19 @@ func TestDownloader_Download(t *testing.T) {
 				Err:        nil,
 				Progress:   100,
 				ContentURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-				Output:     "/tmp/listen-tube/dQw4w9WgXcQ/worstaudio.mp4",
+				Output:     "/tmp/listen-tube-test/dQw4w9WgXcQ/worstaudio.mp4",
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDownloader(&conf.DownloaderConfig{
-				BinUri:   tt.fields.binUri,
-				BinURL:   tt.fields.binURL,
-				BasePath: tt.fields.basePath,
-			})
+			d, err := NewDownloader(tt.fields.conf)
 			if err != nil {
 				t.Errorf("NewDownloader() error = %v", err)
 				return
 			}
 			got, err := d.Download(tt.args.ctx, tt.args.opt)
-
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Downloader.Download() error = %v, wantErr %v", err, tt.wantErr)
 				return

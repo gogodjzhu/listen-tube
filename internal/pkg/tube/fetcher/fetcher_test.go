@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	"testing"
+
+	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 )
 
 func TestChannelFetcher_Fetch(t *testing.T) {
@@ -37,8 +39,8 @@ func TestChannelFetcher_Fetch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cf := NewFetcher(Config{
-				Proxies: tt.fields.proxies,
+			cf := NewFetcher(&conf.FetcherConfig{
+				Enable:                true,
 			})
 			got, err := cf.Fetch(tt.args.opt)
 			if (err != nil) != tt.wantErr {

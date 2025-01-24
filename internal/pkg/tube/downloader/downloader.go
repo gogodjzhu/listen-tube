@@ -8,8 +8,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
+	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/errors"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/util/ioutil"
 	log "github.com/sirupsen/logrus"
@@ -17,20 +19,8 @@ import (
 
 // Downloader is responsible for downloading contents using youtube-dl. @see https://github.com/yt-dlp/yt-dlp
 type Downloader struct {
-	basePath string // base output directory
-	binUri   string // path to youtube-dl binary
-}
-
-type Config struct {
-	BinUri   string // path to store youtube-dl binary
-	BinURL   string // url to download the youtube-dl binary
-	BasePath string // base output directory
-}
-
-var DefaultConfig = &Config{
-	BinUri:   "/tmp/listen-tube/.bin/yt-dlp",
-	BinURL:   "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
-	BasePath: "/tmp/listen-tube/",
+	conf   *conf.DownloaderConfig
+	binUri string
 }
 
 func (opt *DownloadOption) Validate() error {
@@ -45,36 +35,75 @@ func (opt *DownloadOption) Validate() error {
 
 // NewDownloader creates a new Downloader instance and ensures the necessary binaries and directories are set up.
 func NewDownloader(conf *conf.DownloaderConfig) (*Downloader, error) {
-	// download the youtube-dl binary if not exists
-	if _, err := os.Stat(conf.BinUri); err != nil {
-		if !os.IsNotExist(err) {
-			log.Errorf("failed to check youtube-dl binary: %v", err)
-			return nil, errors.ErrFailedOS
-		}
-		if err := ioutil.DownloadFile(conf.BinURL, conf.BinUri); err != nil {
-			log.Errorf("failed to download youtube-dl binary: %v", err)
-			return nil, errors.ErrFailedOS
-		}
-		// make the binary executable
-		if err := os.Chmod(conf.BinUri, 0755); err != nil {
-			log.Errorf("failed to make the binary executable: %v", err)
-			return nil, errors.ErrFailedOS
+	d := &Downloader{
+		conf:   conf,
+		binUri: filepath.Join(conf.BasePath, ".bin", "yt-dlp"),
+	}
+	if err := d.prepare(); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func (d *Downloader) TryStart(ctx context.Context, next func() *dao.Content, update func(dao.Content, *Result)) {
+	if !d.conf.Enable {
+		log.Info("downloader disabled")
+		return
+	}
+	// periodically (from d.conf.DownloadIntervalSeconds) fetch the content
+	timer := time.NewTicker(time.Duration(d.conf.DownloadIntervalSeconds) * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("downloader stopped")
+			return
+		case <-timer.C:
+			content := next()
+			if content == nil {
+				continue
+			}
+			result, err := d.Download(ctx, &DownloadOption{
+				ContentCredit: content.ContentCredit,
+				Format:        "mp3",
+				Force:         false,
+			})
+			result.Err = err
+			update(*content, result)
 		}
 	}
+}
+
+func (d *Downloader) prepare() error {
+	// execute ``yt-dlp --version`` to check if the binary is working
+	cmd := exec.Command(d.binUri, "--version")
+	if err := cmd.Run(); err != nil {
+		log.Info("yt-dlp binary not found, downloading...")
+		// download yt-dlp binary if not exists
+		if err := ioutil.DownloadFile(d.conf.YtDlpLink, d.binUri, true, 0755); err != nil {
+			log.Errorf("failed to download yt-dlp binary: %v", err)
+			return errors.ErrFailedOS
+		}
+	}
+	cmd = exec.Command(d.binUri, "--version")
+	versionOutput, err := cmd.Output()
+	if err != nil {
+		log.Errorf("yt-dlp binary is not working: %v", err)
+		return errors.ErrFailedOS
+	}
+	// log the version of yt-dlp binary and its path
+	log.Infof("yt-dlp version: %s, path: %s", strings.TrimSpace(string(versionOutput)), d.binUri)
+
 	// create base path if not exists
-	if err := os.MkdirAll(conf.BasePath, os.ModePerm); err != nil {
+	if err := os.MkdirAll(d.conf.BasePath, os.ModePerm); err != nil {
 		log.Errorf("failed to create base path: %v", err)
-		return nil, errors.ErrFailedOS
+		return errors.ErrFailedOS
 	}
 	// check if ffmpeg exists
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		log.Errorf("ffmpeg not found: %v", err)
-		return nil, errors.ErrFailedOS
+		return errors.ErrFailedOS
 	}
-	return &Downloader{
-		basePath: conf.BasePath,
-		binUri:   conf.BinUri,
-	}, nil
+	return nil
 }
 
 // Download downloads a content based on the provided DownloadOption and returns the Result.
@@ -85,7 +114,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 	}
 
 	// prepare the output file path
-	outPath := filepath.Join(d.basePath, opt.ContentCredit)
+	outPath := filepath.Join(d.conf.BasePath, opt.ContentCredit)
 	if err := os.Mkdir(outPath, os.ModePerm); err != nil && !os.IsExist(err) {
 		log.Errorf("failed to create output directory: %v", err)
 		return nil, errors.ErrFailedOS
@@ -120,7 +149,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 						progress, _ := strconv.ParseFloat(match[1], 64)
 						result.Progress = progress
 					}
-					log.Infof("downloading %s: %s", opt.ContentCredit, m)
+					log.Debugf("downloading %s: %s", opt.ContentCredit, m)
 				}
 			}
 		}
@@ -142,6 +171,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 		return nil, err
 	}
 	result.Finished = true
+	log.Debugf("downloaded content: %s", opt.ContentCredit)
 	return result, nil
 }
 

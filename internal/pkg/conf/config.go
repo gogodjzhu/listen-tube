@@ -7,7 +7,7 @@ import (
 type Config struct {
 	WebConfig        *WebConfig        `yaml:"web"`
 	DBConfig         *DBConfig         `yaml:"db"`
-	DownloaderConfig *DownloaderConfig `yaml:"downloader"`
+	SubscriberConfig *SubscriberConfig `yaml:"subscriber"`
 }
 
 type WebConfig struct {
@@ -27,11 +27,27 @@ const (
 	SQLiteDriver DriverType = "sqlite"
 )
 
+type SubscriberConfig struct {
+	FetcherConfig    *FetcherConfig    `yaml:"fetcher"`
+	DownloaderConfig *DownloaderConfig `yaml:"downloader"`
+}
+
+type FetcherConfig struct {
+	Enable                bool         `yaml:"enable"`
+	ProxyConfig           *ProxyConfig `yaml:"proxy"`
+	FetcheIntervalSeconds int          `yaml:"fetch_interval_seconds"`
+}
+
 type DownloaderConfig struct {
-	Enable   bool   `yaml:"enable"`
-	BinUri   string `yaml:"bin_uri"`
-	BinURL   string `yaml:"bin_url"`
-	BasePath string `yaml:"base_path"`
+	Enable                  bool         `yaml:"enable"`
+	ProxyConfig             *ProxyConfig `yaml:"proxy"`
+	BasePath                string       `yaml:"base_path"`
+	YtDlpLink               string       `yaml:"yt_dlp_link"`
+	DownloadIntervalSeconds int          `yaml:"download_interval_seconds"`
+}
+
+type ProxyConfig struct {
+	Proxies []string `yaml:"proxies"`
 }
 
 func ReadConfig(content []byte) (*Config, error) {
