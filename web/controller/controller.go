@@ -12,8 +12,6 @@ import (
 	"github.com/gogodjzhu/listen-tube/internal/pkg/conf"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db"
 	"github.com/gogodjzhu/listen-tube/internal/pkg/db/dao"
-	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/downloader"
-	"github.com/gogodjzhu/listen-tube/internal/pkg/tube/fetcher"
 	"github.com/gogodjzhu/listen-tube/web/controller/buzz"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
@@ -47,14 +45,7 @@ func NewController(ctx context.Context, conf *conf.Config) (*Controller, error) 
 		return nil, err
 	}
 
-	downloaderInstance, err := downloader.NewDownloader(conf.DownloaderConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	fetcherInstance := fetcher.NewFetcher(fetcher.Config{})
-
-	subscribeService, err := subscribe.NewSubscribeService(unionMapper, downloaderInstance, fetcherInstance)
+	subscribeService, err := subscribe.NewSubscribeService(unionMapper, conf.SubscriberConfig)
 	if err != nil {
 		return nil, err
 	}
