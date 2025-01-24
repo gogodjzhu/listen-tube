@@ -28,10 +28,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import Auth from '../utils/Auth'
-import axios from 'axios'
-import type {User} from '../utils/Auth'
+<script>
+import Auth from '@/components/utils/Auth'
 
 export default {
   name: 'Login',
@@ -73,8 +71,6 @@ export default {
     updateCurrentUser () {
       Auth.currentUser()
         .then(user => {
-          var u:User = user
-          console.log(".....", u.UserName)
           this.currentUser = user
         })
         .catch(error => {
