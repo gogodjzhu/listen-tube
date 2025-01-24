@@ -30,3 +30,6 @@ logs/
 
 # env file
 .env.prod
+
+# frontend
+node_modules
