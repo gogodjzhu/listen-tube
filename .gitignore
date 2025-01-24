@@ -25,5 +25,8 @@ vendor/
 go.work
 go.work.sum
 
+# logs
+logs/
+
 # env file
-.env
+.env.prod
