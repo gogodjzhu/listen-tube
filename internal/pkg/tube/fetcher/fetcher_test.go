@@ -32,7 +32,7 @@ func TestChannelFetcher_Fetch(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(result *Result) bool {
-				return len(result.Contents) > 0 && result.Err == nil
+				return len(result.Contents) > 0
 			},
 		},
 		// Add more test cases as needed

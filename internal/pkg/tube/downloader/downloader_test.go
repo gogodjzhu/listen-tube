@@ -43,7 +43,6 @@ func TestDownloader_Download(t *testing.T) {
 			},
 			want: &Result{
 				Finished:   true,
-				Err:        nil,
 				Progress:   100,
 				ContentURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 				Output:     "/tmp/listen-tube-test/dQw4w9WgXcQ/worstaudio.mp4",

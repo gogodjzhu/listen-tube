@@ -67,7 +67,10 @@ func (d *Downloader) TryStart(ctx context.Context, next func() *dao.Content, upd
 				Format:        "mp3",
 				Force:         false,
 			})
-			result.Err = err
+			if err != nil {
+				log.Errorf("failed to download content %s: %s", content.ContentCredit, err)
+				continue
+			}
 			update(*content, result)
 		}
 	}
@@ -131,7 +134,6 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 	// prepare the Result struct
 	result := &Result{
 		Finished:   false,
-		Err:        nil,
 		Progress:   0,
 		ContentURL: "https://www.youtube.com/watch?v=" + opt.ContentCredit,
 		Output:     filepath.Join(outPath, "worstaudio."+opt.Format),
@@ -183,7 +185,6 @@ type DownloadOption struct {
 
 type Result struct {
 	Finished   bool    // download finished
-	Err        error   // error message
 	Progress   float64 // download progress
 	ContentURL string  // content url
 	Output     string  // absolute output file path

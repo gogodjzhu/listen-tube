@@ -51,7 +51,10 @@ func (cf *Fetcher) TryStart(ctx context.Context, next func() *dao.Channel, updat
 			result, err := cf.Fetch(FetchOption{
 				ChannelCredit: channel.ChannelCredit,
 			})
-			result.Err = err
+			if err != nil {
+				log.Errorf("failed to fetch channel %s: %s", channel.ChannelCredit, err)
+				continue
+			}
 			update(channel, result)
 		}
 	}
@@ -167,7 +170,6 @@ func (cf *Fetcher) Fetch(opt FetchOption) (*Result, error) {
 		Thumbnails:  thumbnails,
 		OwnerUrls:   ownerUrls,
 		Contents:    contents,
-		Err:         nil,
 	}, nil
 }
 
@@ -199,7 +201,6 @@ type Result struct {
 	Thumbnails  []string
 	OwnerUrls   []string
 	Contents    []Content
-	Err         error
 }
 
 type Content struct {
