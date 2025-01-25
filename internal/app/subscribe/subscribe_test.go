@@ -406,7 +406,6 @@ func TestSubscribeService_updateDownloadResult(t *testing.T) {
 	result := &downloader.Result{
 		Finished: true,
 		Output:   "/path/to/downloaded/file",
-		Err:      nil,
 	}
 	s.updateDownloadResult(*content, result)
 

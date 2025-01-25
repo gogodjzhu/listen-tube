@@ -75,16 +75,11 @@ func (s *SubscribeService) takeNextDownload() *dao.Content {
 
 // TODO: test this method
 func (s *SubscribeService) updateDownloadResult(c dao.Content, r *downloader.Result) {
-	if r.Err != nil {
-		log.Errorf("updateDownloadResult failed, content %s, err:%v", c.ContentCredit, r.Err)
-		return
-	}
 	state := dao.ContentStateDownloaded
 	info := "finished"
 	if !r.Finished {
 		state = dao.ContentStateFailed
-		info = r.Err.Error()
-		log.Warnf("failed to download content %s, err:%v", c.ContentCredit, r.Err)
+		log.Warnf("failed to download content %s", c.ContentCredit)
 	}
 	_, err := s.contentMapper.Update(&dao.Content{ID: c.ID}, &dao.Content{
 		State:    state,
@@ -114,10 +109,6 @@ func (s *SubscribeService) takeNextFetcher() *dao.Channel {
 
 // TODO: test this method
 func (s *SubscribeService) updateFetchResult(c *dao.Channel, r *fetcher.Result) {
-	if r.Err != nil {
-		log.Errorf("updateFetchResult failed, channel %s, err:%v", c.ChannelCredit, r.Err)
-		return
-	}
 	for _, content := range r.Contents {
 		state := dao.ContentStatePrepared
 		info := "prepared"
