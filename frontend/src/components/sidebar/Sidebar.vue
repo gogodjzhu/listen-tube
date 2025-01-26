@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="subscription-title">Subscription</div>
-    <ul v-if="userInfoStore.subscriptions" class="p-1">
-      <li v-for="subscription in userInfoStore.subscriptions" :key="subscription.channel_name" class="subscription-item">
+    <ul v-if="buzzInfo.subscriptions" class="p-1">
+      <li v-for="subscription in buzzInfo.subscriptions" :key="subscription.channel_name" class="subscription-item">
         <img :src="subscription.channel_thumbnail" alt="thumbnail" class="thumbnail">
         <span>{{ subscription.channel_name }}</span>
       </li>
@@ -16,6 +16,7 @@
 <script lang="ts">
 import subscribeAPI from '../utils/Subscribe'
 import useUserInfoStore from '../../stores/UserInfo'
+import useBuzzInfoStore from '../../stores/BuzzInfo'
 
 export default {
   name: 'Sidebar',
@@ -24,16 +25,19 @@ export default {
     }
   },
   setup () {
-    const userInfoStore = useUserInfoStore()
+    const buzzInfo = useBuzzInfoStore()
+    const userInfo = useUserInfoStore()
+
     return {
-      userInfoStore: userInfoStore,
+      buzzInfo: buzzInfo,
+      userInfo: userInfo
     }
   },
   methods: {
     handleUpdateSubscription () {
       subscribeAPI.listSubscriptions()
         .then(subscriptions => {
-          this.userInfoStore.updateSubscriptions(subscriptions)
+          this.buzzInfo.updateSubscriptions(subscriptions)
         })
         .catch(error => {
           console.log('Internal error: ' + error)
@@ -41,7 +45,10 @@ export default {
     }
   },
   mounted () {
-    this.handleUpdateSubscription()
+    this.userInfo.$subscribe((mutation, state) => {
+      this.buzzInfo.clearSubscriptions()
+      this.handleUpdateSubscription()
+    })
   }
 }
 </script>

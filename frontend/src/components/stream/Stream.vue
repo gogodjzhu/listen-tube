@@ -1,7 +1,8 @@
 <template>
   <div id="stream" class="scroll-container" @scroll="handleScroll">
-    <div v-if="userInfoStore.contents.length" class="col-sm-12 col-md-10 col-lg-8 mx-auto">
-      <div v-for="content in userInfoStore.contents" :key="content.name" class="card d-flex flex-row" @click="playContent(content)">
+    <div v-if="buzzInfo.contents.length" class="col-sm-12 col-md-10 col-lg-8 mx-auto">
+      <div v-for="content in buzzInfo.contents" :key="content.name" class="card d-flex flex-row"
+        @click="handlePlayContent(content)">
         <div class="card-img-left-wrapper">
           <img :src="content.thumbnail" class="card-img-left" alt="..." />
         </div>
@@ -22,6 +23,7 @@
 import contentAPI from '../utils/Content'
 import type { Content } from '../utils/Content'
 import useUserInfoStore from '../../stores/UserInfo'
+import useBuzzInfoStore from '../../stores/BuzzInfo'
 
 import 'aplayer/dist/APlayer.min.css'
 import APlayer from 'aplayer'
@@ -37,13 +39,15 @@ export default {
     }
   },
   setup () {
-    const userInfoStore = useUserInfoStore()
+    const userInfo = useUserInfoStore()
+    const buzzInfo = useBuzzInfoStore()
     return {
-      userInfoStore: userInfoStore,
+      userInfo: userInfo,
+      buzzInfo: buzzInfo
     }
   },
   methods: {
-    updateContents () {
+    handleUpdateContents () {
       if (this.loading || this.noMoreContents) return
       this.loading = true
       contentAPI.listContents(this.pageIndex, this.pageSize)
@@ -51,7 +55,7 @@ export default {
           if (newContents.length === 0) {
             this.noMoreContents = true
           } else {
-            this.userInfoStore.appendContents(newContents)
+            this.buzzInfo.appendContents(newContents)
             this.pageIndex++
           }
           this.loading = false
@@ -64,10 +68,10 @@ export default {
     handleScroll (event) {
       const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight
       if (bottom) {
-        this.updateContents()
+        this.handleUpdateContents()
       }
     },
-    playContent (content: Content) {
+    handlePlayContent (content: Content) {
       const ap = new APlayer({
         container: document.getElementById('aplayer'),
         audio: {
@@ -81,7 +85,14 @@ export default {
     }
   },
   mounted () {
-    this.updateContents()
+    this.userInfo.$subscribe((mutation, state) => {
+      this.pageIndex = 1
+      this.loading = false
+      this.noMoreContents = false
+      
+      this.buzzInfo.clearContents()
+      this.handleUpdateContents()
+    })
   }
 }
 </script>
@@ -123,7 +134,8 @@ export default {
 }
 
 .scroll-container {
-  height: calc(100vh - 60px); /* Adjust based on header and bottom height */
+  height: calc(100vh - 60px);
+  /* Adjust based on header and bottom height */
   overflow-y: auto;
 }
 
