@@ -1,6 +1,5 @@
 <template>
   <div>
-    <div class="subscription-title">Subscription</div>
     <ul v-if="buzzInfo.subscriptions" class="p-1">
       <li v-for="subscription in buzzInfo.subscriptions" :key="subscription.channel_name" class="subscription-item">
         <img :src="subscription.channel_thumbnail" alt="thumbnail" class="thumbnail">
