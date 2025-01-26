@@ -110,6 +110,7 @@ export default {
   border: none;
   border-radius: 0.5rem;
   box-shadow: 0rem 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
+  cursor: pointer; /* Add this line */
 }
 
 .card-img-left-wrapper {

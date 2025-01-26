@@ -68,10 +68,10 @@ func (d *Downloader) TryStart(ctx context.Context, next func() *dao.Content, upd
 				Force:         false,
 			})
 			if err != nil {
-				log.Errorf("failed to download content %s: %s", content.ContentCredit, err)
-				continue
+				update(*content, &Result{Finished: false})
+			} else {
+				update(*content, result)
 			}
-			update(*content, result)
 		}
 	}
 }
@@ -151,7 +151,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 						progress, _ := strconv.ParseFloat(match[1], 64)
 						result.Progress = progress
 					}
-					log.Debugf("downloading %s: %s", opt.ContentCredit, m)
+					log.Info("downloading %s: %s", opt.ContentCredit, m)
 				}
 			}
 		}

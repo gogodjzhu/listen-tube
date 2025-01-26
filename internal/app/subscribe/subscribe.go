@@ -79,7 +79,7 @@ func (s *SubscribeService) updateDownloadResult(c dao.Content, r *downloader.Res
 	info := "finished"
 	if !r.Finished {
 		state = dao.ContentStateFailed
-		log.Warnf("failed to download content %s", c.ContentCredit)
+		log.Warnf("Finished download content %s with failed", c.ContentCredit)
 	}
 	_, err := s.contentMapper.Update(&dao.Content{ID: c.ID}, &dao.Content{
 		State:    state,
