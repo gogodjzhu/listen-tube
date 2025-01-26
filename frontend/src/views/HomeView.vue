@@ -17,33 +17,33 @@
     </div>
 
     <!-- stream -->
-    <!-- <div class="content">
+    <div class="content">
       <Stream />
-    </div> -->
+    </div>
 
     <!-- player -->
     <div id="aplayer" class="aplayer-container"></div>
 
     <!-- sidebar offcanvas -->
-    <!-- <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
       <div class="offcanvas-body">
         <Sidebar />
       </div>
-    </div> -->
+    </div>
   </div>
 </template>
 
-<script>
-import Login from '@/components/login/Login.vue'
-// import Sidebar from '@/components/sidebar/Sidebar.vue'
-// import Stream from '@/components/stream/Stream.vue'
+<script lang="ts">
+import Login from '../components/login/Login.vue'
+import Sidebar from '../components/sidebar/Sidebar.vue'
+import Stream from '../components/stream/Stream.vue'
 
 export default {
   name: 'Home',
   components: {
     Login,
-    // Sidebar,
-    // Stream
+    Sidebar,
+    Stream
   },
   data () {
     return {
@@ -54,8 +54,7 @@ export default {
   },
   methods: {
     search () {
-      const currentUser = this.$refs.Login.getCurrentUser()
-      console.log('Search:', this.form.search, 'User:', currentUser)
+      console.log('Search:', this.form.search)
     }
   }
 }

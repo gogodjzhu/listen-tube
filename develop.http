@@ -1,4 +1,4 @@
-@jwt_cookie = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzYyNzE4MzYsIm9yaWdfaWF0IjoxNzM2MjY4MjM2LCJ1c2VyY3JlZGl0IjoiJDJhJDEwJE9RSWs2NU52Ui5nL1kxLmtrV2lyR09jRHp0dUw5ZGJhR2NrNnJENHFNN2l5Y25XSWhQek9PIiwidXNlcm5hbWUiOiJ2YWxpZFVzZXIifQ.KIqwMu7is51wusGevb7E5adUJ7sBEoD7KLExeVX3fC8
+@jwt_cookie = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzc4MjE1OTUsIm9yaWdfaWF0IjoxNzM3ODE3OTk1LCJ1c2VyY3JlZGl0IjoiJDJhJDEwJHZoTkpvSDloM04wRlBseHBKakJqTnVEMWkuUGMzN0xld0h4cVJFOVpkbGVuellYc1RXdi5XIiwidXNlcm5hbWUiOiJ2YWxpZFVzZXIifQ.G9AcuqPOHcHgsDa2hnj_pJg8v1Du1S-MtLzU_OWr9xw
 @content_credit = 4rz8b_UTO1s
 
 ### /auth/register
@@ -10,6 +10,12 @@ Content-Type: application/json
   "password": "validPassword",
   "invitedCode": "123456"
 }
+
+### `/auth/register` return :
+# {
+#   "code": 0,
+#   "msg": "ok"
+# }
 
 ### /auth/login
 POST http://localhost:8080/auth/login

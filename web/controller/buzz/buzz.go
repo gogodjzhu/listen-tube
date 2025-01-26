@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/subscribe"
 	utiltime "github.com/gogodjzhu/listen-tube/internal/pkg/util/time"
+	"github.com/gogodjzhu/listen-tube/web/controller/middleware/interceptor"
 	"github.com/gogodjzhu/listen-tube/web/controller/middleware/jwt"
 )
 
@@ -69,28 +70,28 @@ func (c *BuzzController) AddHandler(r gin.IRoutes) error {
 }
 
 // AddSubscription adds a new subscription for a user to a channel.
-func (c *BuzzController) AddSubscription(userInfo *jwt.UserInfo, req *AddSubscriptionRequest) *AddSubscriptionResult {
+func (c *BuzzController) AddSubscription(userInfo *jwt.UserInfo, req *AddSubscriptionRequest) *interceptor.APIResponseDTO[bool] {
 	if err := c.subscribeService.AddSubscription(userInfo.UserCredit, req.ChannelID); err != nil {
-		return &AddSubscriptionResult{Code: 1, Msg: err.Error()}
+		return interceptor.NewDefaultErrorResponse[bool](err.Error())
 	} else {
-		return &AddSubscriptionResult{Code: 0, Msg: "ok"}
+		return interceptor.NewDefaultSuccessResponse(true)
 	}
 }
 
 // DeleteSubscription deletes a subscription for a user to a channel.
-func (c *BuzzController) DeleteSubscription(userInfo *jwt.UserInfo, req *DeleteSubscriptionRequest) *DeleteSubscriptionResult {
+func (c *BuzzController) DeleteSubscription(userInfo *jwt.UserInfo, req *DeleteSubscriptionRequest) *interceptor.APIResponseDTO[bool] {
 	if err := c.subscribeService.DeleteSubscription(userInfo.UserCredit, req.ChannelID); err != nil {
-		return &DeleteSubscriptionResult{Code: 1, Msg: err.Error()}
+		return interceptor.NewDefaultErrorResponse[bool](err.Error())
 	} else {
-		return &DeleteSubscriptionResult{Code: 0, Msg: "ok"}
+		return interceptor.NewDefaultSuccessResponse(true)
 	}
 }
 
 // ListSubscription lists all subscriptions for a user.
-func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubscriptionRequest) *ListSubscriptionResult {
+func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubscriptionRequest) *interceptor.APIResponseDTO[[]*Subscription] {
 	subscriptions, err := c.subscribeService.ListSubscription(userInfo.UserCredit)
 	if err != nil {
-		return &ListSubscriptionResult{Code: 1, Msg: err.Error()}
+		return interceptor.NewDefaultErrorResponse[[]*Subscription](err.Error())
 	}
 	result := make([]*Subscription, len(subscriptions))
 	for i, sub := range subscriptions {
@@ -106,14 +107,14 @@ func (c *BuzzController) ListSubscription(userInfo *jwt.UserInfo, req *ListSubsc
 			UpdateAt:         sub.UpdateAt.Unix(),
 		}
 	}
-	return &ListSubscriptionResult{Subscriptions: result, Code: 0, Msg: "ok"}
+	return interceptor.NewDefaultSuccessResponse(result)
 }
 
 // ListContent lists all contents for a user.
-func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentRequest) *ListContentResult {
+func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentRequest) *interceptor.APIResponseDTO[[]*Content] {
 	contents, err := c.subscribeService.ListContent(userInfo.UserCredit, req.PageIndex, req.PageSize)
 	if err != nil {
-		return &ListContentResult{Code: 1, Msg: err.Error()}
+		return interceptor.NewDefaultErrorResponse[[]*Content](err.Error())
 	}
 	channelCredits := make(map[string]string)
 	for _, content := range contents {
@@ -143,45 +144,23 @@ func (c *BuzzController) ListContent(userInfo *jwt.UserInfo, req *ListContentReq
 			UpdateAt: content.UpdateAt.Unix(),
 		}
 	}
-	return &ListContentResult{Contents: result, Code: 0, Msg: "ok"}
+	return interceptor.NewDefaultSuccessResponse(result)
 }
 
 type AddSubscriptionRequest struct {
 	ChannelID string `json:"channel_id"`
 }
 
-type AddSubscriptionResult struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-}
-
 type DeleteSubscriptionRequest struct {
 	ChannelID string `json:"channel_id"`
-}
-
-type DeleteSubscriptionResult struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
 }
 
 type ListSubscriptionRequest struct {
 }
 
-type ListSubscriptionResult struct {
-	Subscriptions []*Subscription `json:"subscriptions"`
-	Code          int             `json:"code"`
-	Msg           string          `json:"msg"`
-}
-
 type ListContentRequest struct {
 	PageIndex int `form:"page_index"`
 	PageSize  int `form:"page_size"`
-}
-
-type ListContentResult struct {
-	Contents []*Content `json:"contents"`
-	Code     int        `json:"code"`
-	Msg      string     `json:"msg"`
 }
 
 type Subscription struct {

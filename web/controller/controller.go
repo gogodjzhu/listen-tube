@@ -27,7 +27,7 @@ func NewController(ctx context.Context, conf *conf.Config) (*Controller, error) 
 	r := gin.Default()
 	// TODO: only allow specific origin
 	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
+	config.AllowOrigins = []string{"http://localhost:8090"}
 	config.AllowCredentials = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}

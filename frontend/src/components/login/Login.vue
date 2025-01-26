@@ -1,9 +1,11 @@
 <template>
   <div>
     <!-- Login components -->
-    <button v-if="currentUser == null" class="btn btn-primary" @click="showLoginModal = true">Login & Sign In</button>
-    <span v-if="currentUser != null">
-      <span>Hello, {{ currentUser.username }}</span>
+    <button v-if="userInfoStore.currentUser == null" class="btn btn-primary" @click="showLoginModal = true">Login & Sign
+      In</button>
+    <span v-if="userInfoStore.currentUser != null">
+      <span>Hello, {{ userInfoStore.name }}</span>
+      <span></span>
       <button class="btn btn-secondary" @click="handleLogout">Logout</button>
     </span>
 
@@ -29,31 +31,33 @@
 </template>
 
 <script lang="ts">
-import Auth from '../utils/Auth'
-import axios from 'axios'
-import type {User} from '../utils/Auth'
+import authAPI from '../utils/Auth'
+import useUserInfoStore from '../../stores/UserInfo'
 
 export default {
   name: 'Login',
   data () {
     return {
       showLoginModal: false,
-      currentUser: null,
       username: '',
       password: ''
     }
   },
+  setup () {
+    const userInfoStore = useUserInfoStore()
+    return {
+      userInfoStore: userInfoStore
+    }
+  },
   methods: {
     handleLogin () {
-      Auth.login(this.username, this.password)
+      authAPI.login(this.username, this.password)
         .then((ret) => {
           if (ret) {
-            this.updateCurrentUser()
+            this.handleUpdateCurrentUser()
             this.showLoginModal = false
             this.username = ''
             this.password = ''
-          } else {
-            alert('Login failed: ' + ret)
           }
         })
         .catch(error => {
@@ -61,33 +65,27 @@ export default {
         })
     },
     handleLogout () {
-      Auth.logout()
+      authAPI.logout()
         .then(() => {
-          this.updateCurrentUser()
+          this.handleUpdateCurrentUser()
         })
         .catch(error => {
           console.log('Internal error: ' + error)
         })
     },
-    // exange token for user info
-    updateCurrentUser () {
-      Auth.currentUser()
+    handleUpdateCurrentUser () {
+      authAPI.currentUser()
         .then(user => {
-          var u:User = user
-          console.log(".....", u.UserName)
-          this.currentUser = user
+          this.userInfoStore.updateCurrentUser(user)
         })
         .catch(error => {
           console.log('Internal error: ' + error)
-          this.currentUser = null
+          this.userInfoStore.$reset()
         })
     },
-    getCurrentUser () {
-      return this.currentUser
-    }
   },
   mounted () {
-    this.updateCurrentUser()
+    this.handleUpdateCurrentUser()
   }
 }
 </script>

@@ -7,6 +7,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/gogodjzhu/listen-tube/internal/app/auth"
+	"github.com/gogodjzhu/listen-tube/web/controller/middleware/interceptor"
 )
 
 type JWTMiddleware struct {
@@ -28,6 +29,9 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 			}
 			return jwt.MapClaims{}
 		},
+		CookieSameSite: http.SameSiteNoneMode,
+		// SendAuthorization: true,
+		// SecureCookie:      true,
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
 			return claimsToUserinfo(claims)
@@ -55,9 +59,22 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 			return true
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
-			c.JSON(code, gin.H{
-				"code":    code,
-				"message": message,
+			c.JSON(code, interceptor.APIResponseDTO[string]{
+				Code: 1,
+				Msg:  message,
+			})
+		},
+		LoginResponse: func(c *gin.Context, code int, message string, time time.Time) {
+			c.JSON(code, interceptor.APIResponseDTO[string]{
+				Code: 0,
+				Msg:  "ok",
+				Data: message,
+			})
+		},
+		LogoutResponse: func(c *gin.Context, code int) {
+			c.JSON(code, interceptor.APIResponseDTO[string]{
+				Code: 0,
+				Msg:  "ok",
 			})
 		},
 		// specifiy where to get the token, format: "<source>:<name>", if there are multiple, use comma to separate
@@ -74,31 +91,43 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 }
 
 func (m *JWTMiddleware) RegisterHandler(ctx *gin.Context) {
-	type register struct {
-		Username    string `form:"username" json:"username" binding:"required"`
-		Password    string `form:"password" json:"password" binding:"required"`
-		InvitedCode string `form:"invitedCode" json:"invitedCode" binding:"required"`
-	}
-	var req register
+	var req RegisterRequest
 	if err := ctx.ShouldBind(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, interceptor.APIResponseDTO[string]{
+			Code: 1,
+			Msg:  err.Error(),
+		})
 		return
 	}
 	if req.InvitedCode != "123456" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid invited code"})
+		ctx.JSON(http.StatusBadRequest, interceptor.APIResponseDTO[RegisterResult]{
+			Code: 1,
+			Msg:  "invalid invited code",
+		})
 		return
 	}
 	err := m.authService.Register(req.Username, req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, interceptor.APIResponseDTO[RegisterResult]{
+			Code: 1,
+			Msg:  err.Error(),
+		})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "register success"})
+	ctx.JSON(http.StatusOK, interceptor.APIResponseDTO[RegisterResult]{
+		Code: 0,
+		Msg:  "success!",
+		Data: RegisterResult(req.Username),
+	})
 }
 
 func (m *JWTMiddleware) UserInfoHandler(ctx *gin.Context) {
 	user := GetCurrentUser(ctx)
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, interceptor.APIResponseDTO[UserInfo]{
+		Code: 0,
+		Msg:  "ok",
+		Data: *user,
+	})
 }
 
 type UserInfo struct {
@@ -120,7 +149,15 @@ func claimsToUserinfo(claims jwt.MapClaims) *UserInfo {
 
 func userinfoToClaims(user *UserInfo) jwt.MapClaims {
 	return jwt.MapClaims{
-		"username": user.UserName,
-		"usercredit":   user.UserCredit,
+		"username":   user.UserName,
+		"usercredit": user.UserCredit,
 	}
 }
+
+type RegisterRequest struct {
+	Username    string `form:"username" json:"username" binding:"required"`
+	Password    string `form:"password" json:"password" binding:"required"`
+	InvitedCode string `form:"invitedCode" json:"invitedCode" binding:"required"`
+}
+
+type RegisterResult string
