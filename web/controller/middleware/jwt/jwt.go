@@ -20,8 +20,8 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 		Realm:            "test zone",
 		SigningAlgorithm: "HS256",
 		Key:              []byte("secret key"),
-		Timeout:          time.Hour,
-		MaxRefresh:       time.Hour,
+		Timeout:          time.Hour * 24 * 7,
+		MaxRefresh:       time.Hour * 24 * 7,
 		IdentityKey:      "listentube",
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*UserInfo); ok {
@@ -82,6 +82,7 @@ func NewJWTMiddleware(authService *auth.AuthService) (*JWTMiddleware, error) {
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 		SendCookie:    true,
+		
 	})
 	m := JWTMiddleware{
 		GinJWTMiddleware: authMiddleware,
