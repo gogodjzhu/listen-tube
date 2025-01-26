@@ -26,6 +26,7 @@ import useUserInfoStore from '../../stores/UserInfo'
 import useBuzzInfoStore from '../../stores/BuzzInfo'
 
 import 'aplayer/dist/APlayer.min.css'
+// @ts-ignore: aplayer
 import APlayer from 'aplayer'
 
 export default {
@@ -65,6 +66,7 @@ export default {
           this.loading = false
         })
     },
+    // @ts-ignore: event type
     handleScroll (event) {
       const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight
       if (bottom) {
@@ -77,6 +79,7 @@ export default {
         audio: {
           name: content.name,
           artist: content.channel_name,
+          // @ts-ignore: import.meta
           url: `${import.meta.env.VITE_API_BASE_URL}/openapi/content/stream/` + content.credit,
           cover: content.thumbnail
         }
