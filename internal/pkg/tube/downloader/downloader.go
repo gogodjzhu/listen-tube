@@ -151,7 +151,7 @@ func (d *Downloader) Download(ctx context.Context, opt *DownloadOption) (*Result
 						progress, _ := strconv.ParseFloat(match[1], 64)
 						result.Progress = progress
 					}
-					log.Info("downloading %s: %s", opt.ContentCredit, m)
+					log.Debugf("downloading %s: %s", opt.ContentCredit, m)
 				}
 			}
 		}
